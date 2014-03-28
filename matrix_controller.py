@@ -75,10 +75,13 @@ class App(object):
 
     def stop(self):
         self._stop.set()
-        logging.info("Waiting for threads to stop")
+        logging.info("Waiting for app threads to stop")
         for thread in self.threads:
             thread.join()
-        logging.info("All threads stopped")
+        logging.info("Threads stopped, turning off boards")
+        self.turn_off_boards()
+        logging.info("App stopped")
+
 
     def animation(self):
         self.master.after(1, self.animation)
@@ -135,11 +138,12 @@ class App(object):
                         board.refresh_leds(input_list)
                 self.serial_fps.cycle_complete()
 
-        #Turn Off
+    def turn_off_boards(self):
         input_list = 100 * 3 * [0]
-        for board_bus in self.board_buses:
-            for board in board_bus:
-                board.refresh_leds(input_list)
+        for i in range(2): #Hack to ensure turning boards off in the end. Not really sure, why does it work.
+            for board_bus in self.board_buses:
+                for board in board_bus:
+                    board.refresh_leds(input_list)
 
     @staticmethod
     def numpy_to_input_list(np_list):
