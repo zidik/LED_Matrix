@@ -12,7 +12,6 @@ import matrix_controller
 
 
 def main():
-    global app_running
     logging.basicConfig(format='[%(asctime)s] [%(threadName)10s] %(levelname)7s: %(message)s', level=logging.DEBUG)
 
     logging.info("Starting up...")
