@@ -24,7 +24,7 @@ class FpsManager:
             self.current_fps = len(self.data)/self.fps_period
 
             # Can be omitted if it is called from somewhere else
-            self.update_string_var()
+            #self.update_string_var()
 
 
     def update_string_var(self):

@@ -27,6 +27,12 @@ class Board:
         if value >= 0 and value <= 1023:
             self.sensor_value = value
 
+    def is_button_pressed(self):
+        if self.sensor_value > 100:
+            return True
+        else:
+            return False
+
 
     @staticmethod
     def led_encoder(led_values):

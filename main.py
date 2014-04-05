@@ -16,7 +16,7 @@ def main():
 
     logging.info("Starting up...")
     root = tkinter.Tk()
-    root.geometry("700x550+50+50")
+    root.geometry("700x750+50+50")
     root.title("LED control panel")
 
     #app.pack(fill=tkinter.BOTH, expand=1)
