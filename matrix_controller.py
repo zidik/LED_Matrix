@@ -2,17 +2,16 @@ __author__ = 'Mark'
 
 import tkinter
 import logging
+import threading
+import time
 
 import serial
 import PIL.Image
 import PIL.ImageTk
 import numpy
-import threading
-import time
 
 import fpsManager
 import board_bus
-
 import pong
 
 
@@ -26,7 +25,7 @@ class App(object):
             [131, 1, 1]
         ]
 
-        self.canvas_dims = 400, 400
+        self.canvas_dims = 200, 200
 
         master.bind_all('<Escape>', lambda event: event.widget.quit())
         self.master = master
@@ -37,13 +36,14 @@ class App(object):
 
         self.photo = None  # Holds TkInter image for displaying in GUI
 
-        self.data = numpy.zeros((40, 40, 3), dtype=numpy.uint8)
+        self.data = numpy.zeros((20, 20, 3), dtype=numpy.uint8)
 
-
-
-        serial_connections = [
-            serial.Serial(port=2, baudrate=500000)
-        ]
+        serial_connections = []
+        try:
+            serial_connections.append(serial.Serial(port=3, baudrate=500000))
+        except serial.SerialException as e:
+            logging.warning("Unable to open serial port")
+            logging.exception(e)
 
         #List of fps objects about app (whitch need periodical refreshing)
         self.app_fps_list = []
@@ -108,17 +108,17 @@ class App(object):
 
     def stop(self):
         self._stop.set()
-        logging.info("Waiting for app threads to stop")
+        logging.debug("Waiting for app threads to stop")
         for thread in self.threads:
             thread.join()
-        logging.info("Threads stopped, Stopping board buses")
+        logging.debug("Threads stopped, Stopping board buses")
         for bus in self.board_buses:
             bus.stop()
-        logging.info("Waiting for boardbus threads to stop")
+        logging.debug("Waiting for boardbus threads to stop")
         for bus in self.board_buses:
             if bus.isAlive():
                 bus.join()
-        logging.info("App stopped")
+        logging.debug("App stopped")
 
     def draw_board(self):
         row_nr = 0
@@ -140,7 +140,7 @@ class App(object):
 
     #TODO: remove all this:
     def _refresh_gui(self):
-        fps = 20
+        fps = 30
         next_update = time.time()
 
         ## UPDATE
@@ -197,7 +197,7 @@ class App(object):
         while not self._stop.isSet() and fps != 0:
             ## UPDATE
             self.data[:] = numpy.array([0, 0, 0])
-            self.draw_guidelines()
+            #self.draw_guidelines()
             pong_game.step()
             pong_game.draw(self.data)
             ##UPDATE END
@@ -211,7 +211,7 @@ class App(object):
                 time.sleep(sleep_time)
 
     def refresh_sensor_data(self):
-        fps = 0
+        fps = 10
         next_update = time.time()
 
         while not self._stop.isSet() and fps != 0:
@@ -264,6 +264,7 @@ class BoardButton:
         self.board_id = board_id
         self.board_buses = board_buses
         self.board = None
+        self.warning_timer = time.time()
 
     def is_pressed(self):
         if self.board is None:
@@ -272,7 +273,10 @@ class BoardButton:
                     if board.id == self.board_id:
                         self.board = board
         if self.board is None:
-            logging.warning("BoardButton {} not found".format(self.board_id))
+            #If no buttons found after 1 second: Warn user
+            if self.warning_timer is not None and time.time() - self.warning_timer > 1.0:
+                logging.warning("BoardButton {} not found".format(self.board_id))
+                self.warning_timer = None
             return False
         return self.board.is_button_pressed()
 

@@ -1,6 +1,9 @@
 __author__ = 'Mark'
 
+import random
+
 import numpy
+
 
 LEFT = 1
 RIGHT = 2
@@ -23,8 +26,7 @@ class Pong:
     #TODO: Currently ball must not move faster than paddle thickness
     def test_ball_collisions(self):
         #ball is behind p2 paddle
-        if self.ball.y <= self.p2_paddle.y+1:
-            print("Paddle")
+        if self.ball.y <= self.p2_paddle.y + 1:  # Behind the front of the paddle
             paddle_left_edge = self.p2_paddle.x-self.p2_paddle.size/2
             paddle_right_edge = self.p2_paddle.x+self.p2_paddle.size/2
 
@@ -42,24 +44,46 @@ class Pong:
                 self.ball.y = 2 * (self.p1_paddle.y) - self.ball.y
 
         #Ball and wall
-        if self.ball.y <= 0:
-            self.ball.y_speed = abs(self.ball.y_speed)
-            self.ball.y = -self.ball.y
+        if self.ball.x <= 0:
+            self.ball.x_speed = abs(self.ball.x_speed)
+            self.ball.x = -self.ball.x
 
-        if self.ball.y >= self.field_dims[1]:
-            self.ball.y_speed = -abs(self.ball.y_speed)
-            self.ball.y = 2*self.field_dims[1] - self.ball.y
+        if self.ball.x >= self.field_dims[0]:
+            self.ball.x_speed = -abs(self.ball.x_speed)
+            self.ball.x = 2 * self.field_dims[0] - self.ball.x
+
+    def test_ball_outside(self):
+        if self.ball.y < 0:
+            return P2
+        if self.ball.y > self.field_dims[1]:
+            return P1
+        return False
 
     def reset_paddles(self):
-        self.p1_paddle = Paddle(self.field_dims[0]/2, self.field_dims[1], 5)
-        self.p2_paddle = Paddle(self.field_dims[0]/2, 0, 5)
+        self.p1_paddle = Paddle(self.field_dims[0] / 2, self.field_dims[1], 6)
+        #self.p2_paddle = Paddle(self.field_dims[0]/2, 0, 6)
+        self.p2_paddle = Paddle(4, 0, 6)
 
-    def reset_ball(self):
-        self.ball = Ball(self.field_dims[0]/2, self.field_dims[1]/2, 0.2, -1)
+    def reset_ball(self, loser=P1):
+        x_speed = 0.2
+        y_speed = 1.0
+
+        x_dir = (random.randint(0, 1) * 2 - 1)
+        if loser == P1:
+            y_dir = -1
+        else:
+            y_dir = 1
+
+        self.ball = Ball(9, self.field_dims[1] / 2, x_dir * x_speed, y_dir * y_speed)
 
     def step(self):
         self.ball.step()
         self.test_ball_collisions()
+
+        loser = self.test_ball_outside()
+        if loser:
+            self.reset_ball(loser)
+
         if self.p1_left_button.is_pressed():
             self.p1_paddle.move(LEFT)
         if self.p1_right_button.is_pressed():
@@ -68,6 +92,8 @@ class Pong:
             self.p2_paddle.move(LEFT)
         if self.p2_right_button.is_pressed():
             self.p2_paddle.move(RIGHT)
+        self.p1_paddle.limit(self.field_dims[1])
+        self.p2_paddle.limit(self.field_dims[1])
 
     def draw(self, image_buffer):
         self.ball.draw(image_buffer)
@@ -89,7 +115,10 @@ class Ball:
         self.y += self.y_speed*size
 
     def draw(self, image_buffer):
-        image_buffer[round(self.y), round(self.x)] = numpy.array([3*[255]])
+        try:
+            image_buffer[int(self.y), int(self.x)] = numpy.array([3 * [255]])
+        except IndexError:
+            pass
 
 
 class Paddle:
@@ -101,25 +130,23 @@ class Paddle:
 
     def move(self, side):
         if side == LEFT:
-            self.x += self.speed
-        elif side == RIGHT:
             self.x -= self.speed
+        elif side == RIGHT:
+            self.x += self.speed
         else:
             raise ValueError("Invalid side")
-        self.limit()
 
-    def limit(self):
-        if self.x - self.size <= 0:
-            self.x = self.size
+    def limit(self, limit):
+        if self.x - self.size / 2 <= 0:
+            self.x = self.size / 2
 
-        limit = 19
-        if self.x + self.size >= limit:
-            self.x = limit - self.size
+        if self.x + self.size / 2 >= limit:
+            self.x = limit - self.size / 2
 
     def draw(self, image_buffer):
         image_buffer[
-            round(self.y),
-            round(self.x-self.size/2):round(self.x+self.size/2)+1
+        int(self.y),
+        int(self.x - self.size / 2):int(self.x + self.size / 2)
         ] = numpy.array([255, 255, 255])
 
 

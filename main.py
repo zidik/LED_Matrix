@@ -22,12 +22,12 @@ def main():
     #app.pack(fill=tkinter.BOTH, expand=1)
 
     app = matrix_controller.App(root)
-    logging.info("Entering tkinter mainloop")
+    logging.debug("Entering tkinter mainloop")
     root.mainloop()
 
-    logging.info("Tkinter mainloop has exited...")
+    logging.debug("Tkinter mainloop has exited...")
     app.stop()
-    logging.info("END")
+    logging.info("Stopped.")
 
 
 if __name__ == '__main__':
