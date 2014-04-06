@@ -11,14 +11,15 @@ RIGHT = 2
 P1 = 1
 P2 = 2
 
+
 class Pong:
     def __init__(self, buttons):
         self.p1_left_button, self.p1_right_button, self.p2_left_button, self.p2_right_button = buttons
 
         self.field_dims = 19, 19
         self.ball = None
-        self.p1_paddle = None  #Paddle on the bottom
-        self.p2_paddle = None     #Paddle on the top
+        self.p1_paddle = None  # Paddle on the bottom
+        self.p2_paddle = None  # Paddle on the top
 
         self.reset_ball()
         self.reset_paddles()
@@ -27,8 +28,8 @@ class Pong:
     def test_ball_collisions(self):
         #ball is behind p2 paddle
         if self.ball.y <= self.p2_paddle.y + 1:  # Behind the front of the paddle
-            paddle_left_edge = self.p2_paddle.x-self.p2_paddle.size/2
-            paddle_right_edge = self.p2_paddle.x+self.p2_paddle.size/2
+            paddle_left_edge = self.p2_paddle.x - self.p2_paddle.size / 2
+            paddle_right_edge = self.p2_paddle.x + self.p2_paddle.size / 2
 
             if paddle_left_edge <= self.ball.x <= paddle_right_edge:
                 self.ball.y_speed = abs(self.ball.y_speed)
@@ -36,12 +37,12 @@ class Pong:
 
         #ball is behind p1 paddle
         if self.ball.y >= self.p1_paddle.y:
-            paddle_left_edge = self.p1_paddle.x-self.p1_paddle.size/2
-            paddle_right_edge = self.p1_paddle.x+self.p1_paddle.size/2
+            paddle_left_edge = self.p1_paddle.x - self.p1_paddle.size / 2
+            paddle_right_edge = self.p1_paddle.x + self.p1_paddle.size / 2
 
             if paddle_left_edge <= self.ball.x <= paddle_right_edge:
                 self.ball.y_speed = -abs(self.ball.y_speed)
-                self.ball.y = 2 * (self.p1_paddle.y) - self.ball.y
+                self.ball.y = 2 * self.p1_paddle.y - self.ball.y
 
         #Ball and wall
         if self.ball.x <= 0:
@@ -101,8 +102,6 @@ class Pong:
         self.p2_paddle.draw(image_buffer)
 
 
-
-
 class Ball:
     def __init__(self, x, y, x_speed, y_speed):
         self.x = x
@@ -111,8 +110,8 @@ class Ball:
         self.y_speed = y_speed
 
     def step(self, size=1):
-        self.x += self.x_speed*size
-        self.y += self.y_speed*size
+        self.x += self.x_speed * size
+        self.y += self.y_speed * size
 
     def draw(self, image_buffer):
         try:
@@ -145,9 +144,6 @@ class Paddle:
 
     def draw(self, image_buffer):
         image_buffer[
-        int(self.y),
-        int(self.x - self.size / 2):int(self.x + self.size / 2)
+            int(self.y),
+            int(self.x - self.size / 2):int(self.x + self.size / 2)
         ] = numpy.array([255, 255, 255])
-
-
-

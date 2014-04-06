@@ -26,8 +26,8 @@ class BoardBus(threading.Thread):
 
         self.boards = []  # list of boards connected to this bus
 
-        self.broadcast_board = ledBoard.Board(ledBoard.BROADCAST_ADDRESS,
-                                              self.serial_connection)  #all boards will listen if data is sent to this board
+        #All boards will listen if data is sent to this board
+        self.broadcast_board = ledBoard.Board(ledBoard.BROADCAST_ADDRESS, self.serial_connection)
 
     def run(self):
         logging.info(self.serial_connection.name + " serial update thread started up")
@@ -64,7 +64,7 @@ class BoardBus(threading.Thread):
     def turn_off_boards(self):
         input_list = 100 * 3 * [0]
         #TODO: test if still needed
-        for i in range(2): #Hack to ensure turning boards off in the end. Not really sure, why does it work.
+        for i in range(2):  # Hack to ensure turning boards off in the end. Not really sure, why does it work.
             self.broadcast_board.refresh_leds(input_list)
 
     def _refresh_boards(self):
@@ -88,20 +88,20 @@ class BoardBus(threading.Thread):
             reverse = not reverse
         return input_list
 
-    def _read_sensors(self): #SLASH/GET BOARDS CURRENTLY CONNECTED
+    def _read_sensors(self):  # SLASH/GET BOARDS CURRENTLY CONNECTED
         """
-        NB! sensor readings are being buffered in hardware(Bus converter) - this causes some of data to be read next cycle
+        NB! sensor readings are being buffered in hardware(Bus converter)
+        this causes some of data to be read next cycle
         """
         self.broadcast_board.read_sensor()
-        curr_serial = self.broadcast_board.serial_connection #TODO: chenge it to self.serial
         start = time.time()
         read_period = 0.010  # read answers for 10ms (should be enough for less than 20 boards)
 
         while time.time()-start < read_period:
             #TODO: Catch exceptions emerging from invalid data coming from serial
             #just inform and continue
-            if curr_serial.inWaiting():
-                received_char_code = curr_serial.read()[0]
+            if self.serial_connection.inWaiting():
+                received_char_code = self.serial_connection.read()[0]
                 received_char = chr(received_char_code)
 
                 #If board ID received
@@ -112,7 +112,7 @@ class BoardBus(threading.Thread):
                         if board.id == received_char_code:
                             self.selected_board = board
                             break
-                    else:   #We have found a board not currently known
+                    else:   # We have found a board not currently known
                         logging.info("Board found:" + str(received_char_code))
                         self.selected_board = self.new_board(received_char_code)
 
@@ -122,27 +122,31 @@ class BoardBus(threading.Thread):
                         try:
                             self.selected_board.set_sensor_value(int(self.read_buffer))
                         except Exception:
-                            logging.debug("setting sensor failed: buffer='" + str(self.read_buffer) +"' selectedboard=" + str(self.selected_board.id) +"'")
+                            logging.debug("setting sensor failed: buffer='" + str(self.read_buffer) +
+                                          "' selected board=" + str(self.selected_board.id) + "'")
                         self.selected_board = None
                     else:
-                        logging.debug("No board selected. buffer='" + str(self.read_buffer) +"'")
+                        logging.debug("No board selected. buffer='" + str(self.read_buffer) + "'")
                 elif '0' <= received_char <= '9':
                     self.read_buffer += received_char
                 elif received_char_code == 0:
-                    pass #DUNNO WHY ZEROES ON BUS?
+                    pass  # TODO:Test:DUNNO WHY RANDOM ZEROES ON BUS?
                 else:
-                    logging.debug("Invalid character received from serial. ascii_nr " + str(received_char_code) + " character:"+ str(received_char))
+                    logging.debug("Invalid character received from serial. ascii_nr " + str(received_char_code)
+                                  + " character:" + str(received_char))
                     #raise IOError("Invalid character received from serial")
 
-    def new_board(self, id):
+    def new_board(self, board_id):
         board = None
         for assignment in BoardBus.board_assignment:
-            if assignment[0] == id:
-                board = ledBoard.Board(id, self.serial_connection, assignment[1], assignment[2] )
-                logging.info("Assigned board " + str(id) + " col=" + str(assignment[1]) + " row=" + str(assignment[2]))
+            if assignment[0] == board_id:
+                board = ledBoard.Board(board_id, self.serial_connection, assignment[1], assignment[2])
+                logging.info("Assigned board " + str(board_id) +
+                             " col=" + str(assignment[1]) +
+                             " row=" + str(assignment[2]))
                 self.boards.append(board)
                 break
         else:
-            logging.warning("Assignment for board " + str(id) + " not found")
+            logging.warning("Assignment for board " + str(board_id) + " not found")
 
         return board

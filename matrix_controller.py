@@ -114,7 +114,7 @@ class App(object):
         logging.debug("Threads stopped, Stopping board buses")
         for bus in self.board_buses:
             bus.stop()
-        logging.debug("Waiting for boardbus threads to stop")
+        logging.debug("Waiting for bus threads to stop")
         for bus in self.board_buses:
             if bus.isAlive():
                 bus.join()
@@ -192,7 +192,6 @@ class App(object):
                 BoardButton(128, self.board_buses)
             )
         )
-
 
         while not self._stop.isSet() and fps != 0:
             ## UPDATE
@@ -279,11 +278,3 @@ class BoardButton:
                 self.warning_timer = None
             return False
         return self.board.is_button_pressed()
-
-
-
-
-
-
-
-

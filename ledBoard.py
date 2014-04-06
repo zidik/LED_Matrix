@@ -1,5 +1,7 @@
 __author__ = 'Mark'
 
+import logging
+
 BROADCAST_ADDRESS = 255
 
 
@@ -18,21 +20,22 @@ class Board:
         self.serial_connection.write(output_bytearray)
 
     def read_sensor(self):
-        ''' Sends out command for board to answer with it's sensor value'''
+        """ Sends out command for board to answer with it's sensor value"""
         output_bytearray = bytearray([self.id])
         output_bytearray += bytearray([ord("?")])
         self.serial_connection.write(output_bytearray)
 
     def set_sensor_value(self, value):
-        if value >= 0 and value <= 1023:
+        if 0 <= value <= 1023:
             self.sensor_value = value
+        else:
+            logging.debug("attempt to set sensor value to {}".format(value))
 
     def is_button_pressed(self):
         if self.sensor_value > 100:
             return True
         else:
             return False
-
 
     @staticmethod
     def led_encoder(led_values):

@@ -26,7 +26,6 @@ class FpsManager:
             # Can be omitted if it is called from somewhere else
             #self.update_string_var()
 
-
     def update_string_var(self):
         if self.string_var is not None:
             self.string_var.set(self.string_var_text.format(self.current_fps))
