@@ -5,9 +5,21 @@ __author__ = 'Mark Laane'
 #Numpy 1.8.1
 #PySerial 2.7
 
+
+#List of ports to use:
+# NB! In windows:
+#  "3" will open COM4,
+#  "4" will open COM5, etc
+
+#Open port COM5
+serial_ports = [4]
+
+#Open ports COM2 and COM5
+#serial_ports = [1,4]
+
+
 import tkinter
 import logging
-
 import matrix_controller
 
 
@@ -19,9 +31,8 @@ def main():
     root.geometry("700x750+50+50")
     root.title("LED control panel")
 
-    #app.pack(fill=tkinter.BOTH, expand=1)
+    app = matrix_controller.App(root, serial_ports)
 
-    app = matrix_controller.App(root)
     logging.debug("Entering tkinter mainloop")
     root.mainloop()
 

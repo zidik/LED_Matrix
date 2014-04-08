@@ -62,8 +62,7 @@ class Pong:
 
     def reset_paddles(self):
         self.p1_paddle = Paddle(self.field_dims[0] / 2, self.field_dims[1], 6)
-        #self.p2_paddle = Paddle(self.field_dims[0]/2, 0, 6)
-        self.p2_paddle = Paddle(4, 0, 6)
+        self.p2_paddle = Paddle(self.field_dims[0]/2, 0, 6)
 
     def reset_ball(self, loser=P1):
         x_speed = 0.2

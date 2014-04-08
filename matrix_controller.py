@@ -16,7 +16,7 @@ import pong
 
 
 class App(object):
-    def __init__(self, master):
+    def __init__(self, master, serial_ports):
 
         board_bus.BoardBus.board_assignment = [
             [128, 0, 0],
@@ -30,7 +30,7 @@ class App(object):
         master.bind_all('<Escape>', lambda event: event.widget.quit())
         self.master = master
         self.frame = tkinter.Frame(self.master, width=600, height=400)
-        self.frame.pack()
+        self.frame.pack()  # (fill=tkinter.BOTH, expand=1) TODO
         self.canvas = tkinter.Canvas(self.frame, width=self.canvas_dims[0], height=self.canvas_dims[1])
         self.canvas.pack()
 
@@ -39,11 +39,12 @@ class App(object):
         self.data = numpy.zeros((20, 20, 3), dtype=numpy.uint8)
 
         serial_connections = []
-        try:
-            serial_connections.append(serial.Serial(port=3, baudrate=500000))
-        except serial.SerialException as e:
-            logging.warning("Unable to open serial port")
-            logging.exception(e)
+        for port in serial_ports:
+            try:
+                serial_connections.append(serial.Serial(port=port, baudrate=500000))
+            except serial.SerialException as e:
+                logging.warning("Unable to open serial port")
+                logging.exception(e)
 
         #List of fps objects about app (whitch need periodical refreshing)
         self.app_fps_list = []
