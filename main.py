@@ -1,9 +1,9 @@
 __author__ = 'Mark Laane'
 
-#Python 3.3.2
+#Python 3.4.0
 #PySerial 2.7
 #Numpy 1.8.1
-#Pillow 2.3.0
+#Pillow 2.4.0
 
 
 #List of ports to use:
