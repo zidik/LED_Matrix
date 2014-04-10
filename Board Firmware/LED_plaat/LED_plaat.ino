@@ -69,8 +69,6 @@ void loop() {
       */
     case '!':
       setPixels((uint8_t*)cmd_buffer);
-      //Not needed anymore, as flushing is always done before:
-      Serial.flush();    //Ensure everything is sent before disabling interrupts
       led_matrix.show();
       break;
     case '?':
