@@ -138,8 +138,8 @@ class Paddle:
         if self.x - self.size / 2 <= 0:
             self.x = self.size / 2
 
-        if self.x + self.size / 2 >= limit:
-            self.x = limit - self.size / 2
+        if self.x + self.size / 2 >= limit+1:
+            self.x = limit+1 - self.size / 2
 
     def draw(self, image_buffer):
         image_buffer[
