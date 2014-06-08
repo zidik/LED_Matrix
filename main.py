@@ -28,7 +28,7 @@ def main():
 
     logging.info("Starting up...")
     root = tkinter.Tk()
-    root.geometry("700x750+50+50")
+    root.geometry("300x750+50+50")
     root.title("LED control panel")
 
     app = matrix_controller.App(root, serial_ports)

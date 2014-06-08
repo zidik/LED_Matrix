@@ -9,6 +9,7 @@ import serial
 import PIL.Image
 import PIL.ImageTk
 import numpy
+import cairo
 
 import fpsManager
 import board_bus
@@ -25,7 +26,7 @@ class App(object):
             [131, 1, 1]
         ]
 
-        self.canvas_dims = 200, 200
+        self.canvas_dims = 300, 300
 
         master.bind_all('<Escape>', lambda event: event.widget.quit())
         self.master = master
@@ -34,9 +35,20 @@ class App(object):
         self.canvas = tkinter.Canvas(self.frame, width=self.canvas_dims[0], height=self.canvas_dims[1])
         self.canvas.pack()
 
+
+        self.currently_pressed = []
+        self.frame.bind("<Key>", self.key_press)
+        self.frame.bind("<KeyRelease>", self.key_release)
+        self.frame.focus_set()
+
         self.photo = None  # Holds TkInter image for displaying in GUI
 
-        self.data = numpy.zeros((20, 20, 3), dtype=numpy.uint8)
+        self.surface_dims = 100,100
+
+        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.surface_dims[0], self.surface_dims[1])
+        self.context = cairo.Context(self.surface)
+
+        self.data = numpy.zeros((self.surface_dims[0], self.surface_dims[1], 3), dtype=numpy.uint8)
 
         serial_connections = []
         for port in serial_ports:
@@ -46,7 +58,7 @@ class App(object):
                 logging.warning("Unable to open serial port")
                 logging.exception(e)
 
-        #List of fps objects about app (whitch need periodical refreshing)
+        #List of fps objects about app (which need periodical refreshing)
         self.app_fps_list = []
 
         #GUI FPS
@@ -141,7 +153,7 @@ class App(object):
 
     #TODO: remove all this:
     def _refresh_gui(self):
-        fps = 30
+        fps = 50
         next_update = time.time()
 
         ## UPDATE
@@ -175,7 +187,7 @@ class App(object):
             self.master.after(sleep_time, self._refresh_gui)
 
     def update_data(self):
-        fps = 20
+        fps = 40
 
         #Game FPS
         game_fps_var = tkinter.StringVar()
@@ -185,21 +197,54 @@ class App(object):
 
         next_update = time.time()
 
-        pong_game = pong.Pong(
-            (
-                BoardButton(130, self.board_buses),
-                BoardButton(131, self.board_buses),
-                BoardButton(129, self.board_buses),
-                BoardButton(128, self.board_buses)
+        pong_game = pong.Pong(self.surface_dims)
+
+        override_buttons = [
+            'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
+        ]
+        buttons = []
+        for i in range(10):
+            buttons.append(
+                (
+                    BoardButton(125+i, self.board_buses),
+                    pong_game.p2_paddle,
+                    10/2 + 10*i,
+                    override_buttons[i]
+                )
             )
-        )
+            buttons.append(
+                (
+                    BoardButton(125+100-1-i, self.board_buses),
+                    pong_game.p1_paddle,
+                    10/2 + 10*(9-i),
+                    override_buttons[20-1-i]
+                )
+            )
 
         while not self._stop.isSet() and fps != 0:
             ## UPDATE
             self.data[:] = numpy.array([0, 0, 0])
             #self.draw_guidelines()
+
+            for button, paddle, position, override_button in buttons:
+                assert isinstance(button, BoardButton)
+                if button.is_pressed() or (override_button in self.currently_pressed):
+                    paddle.set_target_position(position)
+
             pong_game.step()
-            pong_game.draw(self.data)
+            pong_game.draw(self.context)
+
+            # Get data from surface and convert it to numpy array
+            buf = self.surface.get_data()
+            a = numpy.frombuffer(buf, numpy.uint8)
+            a.shape = (self.surface_dims[0], self.surface_dims[1], 4)
+            #Strip Alpha values and copy to our main numpy array
+            numpy.copyto(self.data, a[:, :, :3])
+
+            self.context.set_source_rgb(0, 0, 0)
+            self.context.paint()
+
             ##UPDATE END
 
             self.signal_update_gui_and_boards()
@@ -235,6 +280,14 @@ class App(object):
                     return board
         logging.warning("Board {} was looked for but not found.".format(board_id))
         return None
+
+    def key_press(self, event):
+        if event.char not in self.currently_pressed:
+            self.currently_pressed.append(event.char)
+
+    def key_release(self, event):
+        while event.char in self.currently_pressed:
+            self.currently_pressed.remove(event.char)
 
     def draw_guidelines(self):
         self.data[0:5, 0] = numpy.array([100] * 3)
