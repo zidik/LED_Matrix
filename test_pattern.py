@@ -1,8 +1,10 @@
 __author__ = 'Mark'
 
-import game
-import cairo
 import math
+
+import cairo
+
+import game
 
 
 class TestPattern(game.Game):
@@ -12,14 +14,14 @@ class TestPattern(game.Game):
         self.board_buses = board_buses
 
         self.connected_pat = cairo.LinearGradient(0.0, 0.0, 0.0, field_dims[1])
-        for i in range(math.ceil(field_dims[1]/10)):
-            self.connected_pat.add_color_stop_rgba(i/10/field_dims[1], 0.0, 0.8, 0.0, 1)
-            self.connected_pat.add_color_stop_rgba((i+1)/10/field_dims[1], 0, 0.2, 0, 1)
+        for i in range(math.ceil(field_dims[1] / 10)):
+            self.connected_pat.add_color_stop_rgba(i / 10 / field_dims[1], 0.0, 0.8, 0.0, 1)
+            self.connected_pat.add_color_stop_rgba((i + 1) / 10 / field_dims[1], 0, 0.2, 0, 1)
 
         self.disconnected_pat = cairo.LinearGradient(0.0, 0.0, 0.0, field_dims[1])
-        for i in range(math.ceil(field_dims[1]/10)):
-            self.disconnected_pat.add_color_stop_rgba(i/10, 0, 0, 0.8, 1)
-            self.disconnected_pat.add_color_stop_rgba((i+1)/10, 0, 0, 0.4, 1)
+        for i in range(math.ceil(field_dims[1] / 10)):
+            self.disconnected_pat.add_color_stop_rgba(i / 10, 0, 0, 0.8, 1)
+            self.disconnected_pat.add_color_stop_rgba((i + 1) / 10, 0, 0, 0.4, 1)
 
         self.font_pat = cairo.SolidPattern(1.0, 1.0, 1.0, alpha=1.0)
 
@@ -30,30 +32,30 @@ class TestPattern(game.Game):
         font_options = ctx.get_font_options()
         font_options.set_antialias(cairo.ANTIALIAS_NONE)
         ctx.set_font_options(font_options)
-        ctx.set_font_size(9) # em-square height is 90 pixels
+        ctx.set_font_size(9)  # em-square height is 90 pixels
 
         for board_id, col, row in self.board_assignments:
             ctx.set_source(self.disconnected_pat)
-            ctx.rectangle(10*col, 10*row, 10*(col+1), 10*(row+1))
+            ctx.rectangle(10 * col, 10 * row, 10 * (col + 1), 10 * (row + 1))
             ctx.fill_preserve()
 
             ctx.set_source_rgba(0, 0, 0, 1)
             ctx.stroke()
 
-            ctx.move_to(10*col, 10*row +8)
+            ctx.move_to(10 * col, 10 * row + 8)
             ctx.set_source(self.font_pat)
             ctx.show_text("%x" % board_id)
 
         for bus in self.board_buses:
             for board in bus.boards:
                 ctx.set_source(self.connected_pat)
-                ctx.rectangle(10*board.column, 10*board.row, 10*(board.column+1), 10*(board.row+1))
+                ctx.rectangle(10 * board.column, 10 * board.row, 10 * (board.column + 1), 10 * (board.row + 1))
                 ctx.fill_preserve()
 
                 ctx.set_source_rgba(0, 0, 0, 1)
                 ctx.stroke()
 
-                ctx.move_to(10*board.column, 10*board.row +8)
+                ctx.move_to(10 * board.column, 10 * board.row + 8)
                 ctx.set_source(self.font_pat)
                 ctx.show_text("%x" % board.id)
 

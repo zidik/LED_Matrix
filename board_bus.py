@@ -1,8 +1,9 @@
 __author__ = 'Mark'
-import ledBoard
 import threading
 import logging
 import time
+
+import ledBoard
 
 
 class BoardBus(threading.Thread):
@@ -16,12 +17,12 @@ class BoardBus(threading.Thread):
         self.sensor_fps = sensor_fps
 
         self._change_in_flags = threading.Event()  # something has changed (signal thread to continue)
-        self._stop_flag = False          # event used to stop the thread
-        self._update_flag = False        # update is pending
+        self._stop_flag = False  # event used to stop the thread
+        self._update_flag = False  # update is pending
         self._read_sensors_flag = False  # reading sensors is pending
 
-        #Variables for reading sensors:
-        self.selected_board = None       # board currently being read (Id received, waiting for data))
+        # Variables for reading sensors:
+        self.selected_board = None  # board currently being read (Id received, waiting for data))
         self.read_buffer = ""
 
         self.boards = []  # list of boards connected to this bus
@@ -63,7 +64,7 @@ class BoardBus(threading.Thread):
 
     def turn_off_boards(self):
         input_list = 100 * 3 * [0]
-        #TODO: test if still needed
+        # TODO: test if still needed
         for i in range(2):  # Hack to ensure turning boards off in the end. Not really sure, why does it work.
             self.broadcast_board.refresh_leds(input_list)
 
@@ -97,8 +98,8 @@ class BoardBus(threading.Thread):
         start = time.time()
         read_period = 0.010  # read answers for 10ms (should be enough for less than 20 boards)
 
-        while time.time()-start < read_period:
-            #TODO: Catch exceptions emerging from invalid data coming from serial
+        while time.time() - start < read_period:
+            # TODO: Catch exceptions emerging from invalid data coming from serial
             #just inform and continue
             if self.serial_connection.inWaiting():
                 received_char_code = self.serial_connection.read()[0]
@@ -112,7 +113,7 @@ class BoardBus(threading.Thread):
                         if board.id == received_char_code:
                             self.selected_board = board
                             break
-                    else:   # We have found a board not currently known
+                    else:  # We have found a board not currently known
                         logging.info("Board found:" + str(received_char_code))
                         self.selected_board = self.new_board(received_char_code)
 

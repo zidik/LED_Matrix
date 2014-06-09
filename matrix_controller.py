@@ -4,13 +4,13 @@ import tkinter
 import logging
 import threading
 import time
+from enum import Enum
 
 import serial
 import PIL.Image
 import PIL.ImageTk
 import numpy
 import cairo
-from enum import Enum
 
 import fpsManager
 import board_bus
@@ -59,7 +59,7 @@ class App(object):
 
         self.photo = None  # Holds TkInter image for displaying in GUI
 
-        #TODO - bug here if dims don't match
+        # TODO - bug here if dims don't match
         self.surface_dims = 100, 100
 
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.surface_dims[0], self.surface_dims[1])
@@ -75,10 +75,10 @@ class App(object):
                 logging.warning("Unable to open serial port")
                 logging.exception(e)
 
-        #List of fps objects about app (which need periodical refreshing)
+        # List of fps objects about app (which need periodical refreshing)
         self.app_fps_list = []
 
-        #GUI FPS
+        # GUI FPS
         gui_fps_var = tkinter.StringVar()
         tkinter.Label(self.frame, textvariable=gui_fps_var).pack()
         self.gui_fps = fpsManager.FpsManager(string_var=gui_fps_var, string_var_text="GUI: {} FPS", update_period=0.5)
@@ -154,7 +154,7 @@ class App(object):
         fps = 50
         next_update = time.time()
 
-        ## UPDATE
+        # # UPDATE
         if self.update_flags['GUI']:
             self.update_flags['GUI'] = False
             im = PIL.Image.fromarray(self.data)
@@ -164,10 +164,10 @@ class App(object):
 
             self.gui_fps.cycle_complete()
 
-            #Update FPS
+            # Update FPS
             for fps_manager in self.app_fps_list:
                 fps_manager.update_string_var()
-        ##UPDATE END
+        # #UPDATE END
 
         temp_gui_string = ""
         for bus in self.board_buses:
@@ -176,7 +176,7 @@ class App(object):
         self.sensor_gui_var.set(temp_gui_string)
 
         next_update += 1.0 / fps
-        sleep_time = round((next_update - time.time())*1000)
+        sleep_time = round((next_update - time.time()) * 1000)
         if sleep_time <= 0:
             sleep_time = 1
 
@@ -186,7 +186,7 @@ class App(object):
     def update_data(self):
         fps = 40
 
-        #Game FPS
+        # Game FPS
         game_fps_var = tkinter.StringVar()
         tkinter.Label(self.frame, textvariable=game_fps_var).pack()
         game_fps = fpsManager.FpsManager(string_var=game_fps_var, string_var_text="Game: {} FPS")
@@ -206,12 +206,12 @@ class App(object):
 
         while not self._stop.isSet() and fps != 0:
 
-            #Poll buttons -> this will call associated functions when buttons are pressed.
+            # Poll buttons -> this will call associated functions when buttons are pressed.
             for button in self.buttons:
                 assert isinstance(button, BoardButton)
                 button.poll()
 
-            ## UPDATE
+            # # UPDATE
             game.step()
             game.draw(self.context)
 
@@ -278,28 +278,28 @@ class App(object):
         Populates "buttons" list
         """
 
-        #keyboard keys - which will be listened to
+        # keyboard keys - which will be listened to
         override_keys = [
             'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
             'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
         ]
-        for i in range(int(len(override_keys)/2)):
+        for i in range(int(len(override_keys) / 2)):
             self.buttons.append(
                 BoardButton(
-                    board_id=128+i,
+                    board_id=128 + i,
                     board_buses=self.board_buses,
                     function=pong_game.p2_paddle.set_target_position,
-                    args=[10/2 + 10*i],
+                    args=[10 / 2 + 10 * i],
                     override_key=override_keys[i]
                 )
             )
             self.buttons.append(
                 BoardButton(
-                    128+100-1-i,
+                    128 + 100 - 1 - i,
                     self.board_buses,
                     pong_game.p1_paddle.set_target_position,
-                    [10/2 + 10*(9-i)],
-                    override_keys[20-1-i]
+                    [10 / 2 + 10 * (9 - i)],
+                    override_keys[20 - 1 - i]
                 )
             )
 
@@ -308,18 +308,18 @@ class App(object):
         Populates "buttons" list
         """
 
-        #keyboard keys - which will be listened to
+        # keyboard keys - which will be listened to
         override_keys = [
             'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
         ]
         for i in range(len(override_keys)):
             self.buttons.append(
                 BoardButton(
-                    128+100-1-i,
+                    128 + 100 - 1 - i,
                     self.board_buses,
                     breaker_game.paddle.set_target_position,
-                    [10/2 + 10*(9-i)],
-                    override_keys[10-1-i]
+                    [10 / 2 + 10 * (9 - i)],
+                    override_keys[10 - 1 - i]
                 )
             )
 
@@ -328,6 +328,7 @@ class BoardButton:
     """
         Tries to find correct board and then returns it's button's state
     """
+
     def __init__(self, board_id, board_buses, function, args=None, override_key=None):
         self.board_id = board_id
         self.board_buses = board_buses
@@ -335,7 +336,7 @@ class BoardButton:
         self.args = args
         self.override_key = override_key
 
-        self.overridden = False   # Is button currently overridden?
+        self.overridden = False  # Is button currently overridden?
         self.board = None
         self.warning_timer = time.time()
 
@@ -345,9 +346,9 @@ class BoardButton:
                 for board in bus.boards:
                     if board.id == self.board_id:
                         self.board = board
-        #Still not found after searching
+        # Still not found after searching
         if self.board is None:
-            #If no buttons found after 1 second: Warn user
+            # If no buttons found after 1 second: Warn user
             if self.warning_timer is not None and time.time() - self.warning_timer > 1.0:
                 logging.warning("BoardButton {} not found".format(self.board_id))
                 self.warning_timer = None

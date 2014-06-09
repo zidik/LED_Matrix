@@ -1,10 +1,12 @@
 __author__ = 'Mark'
 
-import game
 import math
 import random
-import cairo
 from threading import Thread
+
+import cairo
+
+import game
 from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call, collide_ball_to_paddle
 
 
@@ -12,14 +14,14 @@ class Breaker(game.Game):
     def __init__(self, field_dims):
         self.field_dims = field_dims
         self.player = Player()
-        self.paddle = Paddle(0, self.field_dims[1]-4)    # Paddle on the bottom
+        self.paddle = Paddle(0, self.field_dims[1] - 4)  # Paddle on the bottom
         self.ball = None
         self.bricks = []
         self.reset_game()
 
     def reset_game(self):
         self.reset_bricks()
-        self.paddle.set_position((self.field_dims[0]-1) / 2)
+        self.paddle.set_position((self.field_dims[0] - 1) / 2)
         self.paddle.set_health(1)
         self.player.reset()
         self.reset_ball()
@@ -27,27 +29,27 @@ class Breaker(game.Game):
     def test_ball_collisions(self):
         collide_ball_to_paddle(self.ball, self.paddle)
 
-        #Ball and wall
+        # Ball and wall
         if self.ball.x <= 0 + self.ball.radius:
             self.ball.set_speed_x(abs(self.ball.get_speed_x()))
-            self.ball.x = -self.ball.x + 2*self.ball.radius
+            self.ball.x = -self.ball.x + 2 * self.ball.radius
 
-        if self.ball.x >= self.field_dims[0]-1 - self.ball.radius:
+        if self.ball.x >= self.field_dims[0] - 1 - self.ball.radius:
             self.ball.set_speed_x(-abs(self.ball.get_speed_x()))
-            self.ball.x = 2 * (self.field_dims[0]-1-self.ball.radius) - self.ball.x
+            self.ball.x = 2 * (self.field_dims[0] - 1 - self.ball.radius) - self.ball.x
 
         if self.ball.y <= 0 + self.ball.radius:
             self.ball.set_speed_y(abs(self.ball.get_speed_y()))
-            self.ball.y = -self.ball.y + 2*self.ball.radius
+            self.ball.y = -self.ball.y + 2 * self.ball.radius
 
     def test_ball_outside(self):
-        if self.ball.y-self.ball.radius-1 > self.field_dims[1]-1:
+        if self.ball.y - self.ball.radius - 1 > self.field_dims[1] - 1:
             return True
         return False
 
     def reset_ball(self):
         speed = 1
-        heading = math.pi/2 + 0.15 * (random.randint(0, 1) * 2 - 1)
+        heading = math.pi / 2 + 0.15 * (random.randint(0, 1) * 2 - 1)
 
         self.ball = Ball(self.paddle.x, self.paddle.y, speed, heading)
 
@@ -59,17 +61,17 @@ class Breaker(game.Game):
             for x in range(dims[0]):
                 self.bricks.append(
                     Brick(
-                        (self.field_dims[0]-brick_dims[0]*dims[0]) / 2 + x*brick_dims[0],
-                        5 + y*brick_dims[1],
+                        (self.field_dims[0] - brick_dims[0] * dims[0]) / 2 + x * brick_dims[0],
+                        5 + y * brick_dims[1],
                         brick_dims[0],
                         brick_dims[1],
-                        patterns[(x+y) % 2]
+                        patterns[(x + y) % 2]
                     )
                 )
 
     def step(self):
         self.paddle.step()
-        self.paddle.limit(self.field_dims[1]-1)
+        self.paddle.limit(self.field_dims[1] - 1)
 
         if self.ball is not None:
             self.ball.step()

@@ -21,10 +21,10 @@ class FpsManager:
             self.last_update = time.time()
             curr_time = time.time()
             self.data = [cycle for cycle in self.data if curr_time - cycle < self.fps_period]
-            self.current_fps = len(self.data)/self.fps_period
+            self.current_fps = len(self.data) / self.fps_period
 
             # Can be omitted if it is called from somewhere else
-            #self.update_string_var()
+            # self.update_string_var()
 
     def update_string_var(self):
         if self.string_var is not None:

@@ -1,6 +1,6 @@
 __author__ = 'Mark Laane'
 
-#Python 3.4.0
+# Python 3.4.0
 #PySerial 2.7
 #Numpy 1.8.1
 #Pillow 2.4.0
@@ -20,6 +20,7 @@ serial_ports = [4]
 
 import tkinter
 import logging
+
 import matrix_controller
 
 
