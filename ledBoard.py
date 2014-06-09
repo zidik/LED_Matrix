@@ -6,8 +6,8 @@ BROADCAST_ADDRESS = 255
 
 
 class Board:
-    def __init__(self, id, serial_connection, column=None, row=None):
-        self.id = id
+    def __init__(self, board_id, serial_connection, column=None, row=None):
+        self.id = board_id
         self.serial_connection = serial_connection
         self.column = column
         self.row = row
@@ -42,7 +42,7 @@ class Board:
         """
         Converts list of led brightness values to serial data
         arg: list of led values [R,G,B,R,G,B, ..... ] limited to 3 bits (values 0-7)
-        ret: bytearray, whitch can be sent direcly with Serial.write()
+        ret: bytearray, which can be sent directly with Serial.write()
         """
         output_byte = 0
         output = []

@@ -10,40 +10,57 @@ import PIL.Image
 import PIL.ImageTk
 import numpy
 import cairo
+from enum import Enum
 
 import fpsManager
 import board_bus
 import pong
+import breaker
+import test_pattern
 
 
 class App(object):
+    class Mode(Enum):
+        test = 0
+        pong = 1
+        breaker = 2
+
     def __init__(self, master, serial_ports):
 
+        """
         board_bus.BoardBus.board_assignment = [
             [128, 0, 0],
             [129, 1, 0],
             [130, 0, 1],
             [131, 1, 1]
         ]
+        """
+
+        board_bus.BoardBus.board_assignment = []
+        for i in range(10):
+            for j in range(10):
+                board_bus.BoardBus.board_assignment.append([128 + 10 * i + j, j, i])
 
         self.canvas_dims = 300, 300
+
+        self.mode = App.Mode.breaker
 
         master.bind_all('<Escape>', lambda event: event.widget.quit())
         self.master = master
         self.frame = tkinter.Frame(self.master, width=600, height=400)
-        self.frame.pack()  # (fill=tkinter.BOTH, expand=1) TODO
+        self.frame.pack()  # (fill=tkinter.BOTH, expand=1) TODO?
         self.canvas = tkinter.Canvas(self.frame, width=self.canvas_dims[0], height=self.canvas_dims[1])
         self.canvas.pack()
 
-
-        self.currently_pressed = []
+        self.buttons = []
         self.frame.bind("<Key>", self.key_press)
         self.frame.bind("<KeyRelease>", self.key_release)
         self.frame.focus_set()
 
         self.photo = None  # Holds TkInter image for displaying in GUI
 
-        self.surface_dims = 100,100
+        #TODO - bug here if dims don't match
+        self.surface_dims = 100, 100
 
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.surface_dims[0], self.surface_dims[1])
         self.context = cairo.Context(self.surface)
@@ -133,25 +150,6 @@ class App(object):
                 bus.join()
         logging.debug("App stopped")
 
-    def draw_board(self):
-        row_nr = 0
-        col_nr = 0
-        size = 10
-        self.canvas.delete(tkinter.ALL)
-        for row in self.data:
-            for cell in row:
-                color_string = "#"
-                for color_element in cell:
-                    color_string += "%0.2X" % color_element
-                self.canvas.create_rectangle(
-                    col_nr*size, row_nr*size, (col_nr+1)*size, (row_nr+1)*size+1,
-                    fill=color_string
-                )
-                col_nr += 1
-            col_nr = 0
-            row_nr += 1
-
-    #TODO: remove all this:
     def _refresh_gui(self):
         fps = 50
         next_update = time.time()
@@ -159,7 +157,6 @@ class App(object):
         ## UPDATE
         if self.update_flags['GUI']:
             self.update_flags['GUI'] = False
-            #TODO: Currently causes Crash :(
             im = PIL.Image.fromarray(self.data)
             im = im.resize((self.canvas_dims[0], self.canvas_dims[1]))
             self.photo = PIL.ImageTk.PhotoImage(image=im)
@@ -197,43 +194,26 @@ class App(object):
 
         next_update = time.time()
 
-        pong_game = pong.Pong(self.surface_dims)
-
-        override_buttons = [
-            'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
-            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
-        ]
-        buttons = []
-        for i in range(10):
-            buttons.append(
-                (
-                    BoardButton(125+i, self.board_buses),
-                    pong_game.p2_paddle,
-                    10/2 + 10*i,
-                    override_buttons[i]
-                )
-            )
-            buttons.append(
-                (
-                    BoardButton(125+100-1-i, self.board_buses),
-                    pong_game.p1_paddle,
-                    10/2 + 10*(9-i),
-                    override_buttons[20-1-i]
-                )
-            )
+        game = None
+        if self.mode == App.Mode.pong:
+            game = pong.Pong(self.surface_dims)
+            self.assign_pong_keys_to_boardbuttons(game)
+        elif self.mode == App.Mode.test:
+            game = test_pattern.TestPattern(self.surface_dims, board_bus.BoardBus.board_assignment, self.board_buses)
+        elif self.mode == App.Mode.breaker:
+            game = breaker.Breaker(self.surface_dims)
+            self.assign_breaker_keys_to_boardbuttons(game)
 
         while not self._stop.isSet() and fps != 0:
-            ## UPDATE
-            self.data[:] = numpy.array([0, 0, 0])
-            #self.draw_guidelines()
 
-            for button, paddle, position, override_button in buttons:
+            #Poll buttons -> this will call associated functions when buttons are pressed.
+            for button in self.buttons:
                 assert isinstance(button, BoardButton)
-                if button.is_pressed() or (override_button in self.currently_pressed):
-                    paddle.set_target_position(position)
+                button.poll()
 
-            pong_game.step()
-            pong_game.draw(self.context)
+            ## UPDATE
+            game.step()
+            game.draw(self.context)
 
             # Get data from surface and convert it to numpy array
             buf = self.surface.get_data()
@@ -282,40 +262,80 @@ class App(object):
         return None
 
     def key_press(self, event):
-        if event.char not in self.currently_pressed:
-            self.currently_pressed.append(event.char)
+        self.handle_key_change(event.char, True)
 
     def key_release(self, event):
-        while event.char in self.currently_pressed:
-            self.currently_pressed.remove(event.char)
+        self.handle_key_change(event.char, False)
 
-    def draw_guidelines(self):
-        self.data[0:5, 0] = numpy.array([100] * 3)
-        self.data[5, 0] = numpy.array([100, 0, 0])
+    def handle_key_change(self, key, override):
+        for button in self.buttons:
+            assert isinstance(button, BoardButton)
+            if button.override_key == key:
+                button.set_override(override)
 
-        self.data[0:5, 10] = numpy.array([100] * 3)
-        self.data[5, 10] = numpy.array([0, 100, 0])
+    def assign_pong_keys_to_boardbuttons(self, pong_game):
+        """
+        Populates "buttons" list
+        """
 
-        self.data[10:15, 0] = numpy.array([100] * 3)
-        self.data[15, 0] = numpy.array([0, 0, 100])
+        #keyboard keys - which will be listened to
+        override_keys = [
+            'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
+        ]
+        for i in range(int(len(override_keys)/2)):
+            self.buttons.append(
+                BoardButton(
+                    board_id=128+i,
+                    board_buses=self.board_buses,
+                    function=pong_game.p2_paddle.set_target_position,
+                    args=[10/2 + 10*i],
+                    override_key=override_keys[i]
+                )
+            )
+            self.buttons.append(
+                BoardButton(
+                    128+100-1-i,
+                    self.board_buses,
+                    pong_game.p1_paddle.set_target_position,
+                    [10/2 + 10*(9-i)],
+                    override_keys[20-1-i]
+                )
+            )
 
-        self.data[10:15, 10] = numpy.array([100] * 3)
-        self.data[15, 10] = numpy.array([70, 70, 0])
+    def assign_breaker_keys_to_boardbuttons(self, breaker_game):
+        """
+        Populates "buttons" list
+        """
 
-        self.data[20:25, 0] = numpy.array([100] * 3)
-        self.data[25, 0] = numpy.array([0, 70, 70])
-
-        self.data[20:25, 10] = numpy.array([100] * 3)
-        self.data[25, 10] = numpy.array([70, 0, 70])
+        #keyboard keys - which will be listened to
+        override_keys = [
+            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
+        ]
+        for i in range(len(override_keys)):
+            self.buttons.append(
+                BoardButton(
+                    128+100-1-i,
+                    self.board_buses,
+                    breaker_game.paddle.set_target_position,
+                    [10/2 + 10*(9-i)],
+                    override_keys[10-1-i]
+                )
+            )
 
 
 class BoardButton:
     """
         Tries to find correct board and then returns it's button's state
     """
-    def __init__(self, board_id, board_buses):
+    def __init__(self, board_id, board_buses, function, args=None, override_key=None):
         self.board_id = board_id
         self.board_buses = board_buses
+        self.function = function
+        self.args = args
+        self.override_key = override_key
+
+        self.overridden = False   # Is button currently overridden?
         self.board = None
         self.warning_timer = time.time()
 
@@ -325,6 +345,7 @@ class BoardButton:
                 for board in bus.boards:
                     if board.id == self.board_id:
                         self.board = board
+        #Still not found after searching
         if self.board is None:
             #If no buttons found after 1 second: Warn user
             if self.warning_timer is not None and time.time() - self.warning_timer > 1.0:
@@ -332,3 +353,16 @@ class BoardButton:
                 self.warning_timer = None
             return False
         return self.board.is_button_pressed()
+
+    def is_overridden(self):
+        return self.overridden
+
+    def set_override(self, value):
+        self.overridden = value
+
+    def poll(self):
+        if self.is_pressed() or self.is_overridden():
+            if self.args is not None:
+                self.function(*self.args)
+            else:
+                self.function()
