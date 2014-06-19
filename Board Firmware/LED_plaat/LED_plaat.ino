@@ -1,7 +1,7 @@
-template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Add streaming operator to Serial (
-
 #include <EEPROM.h>
 #include <Adafruit_NeoPixel.h>
+#include "customtypes.h"
+template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Add streaming operator to Serial (
 
 
 #define BROADCAST_ID  255  // ASCII character number that all boards listen to on serial port
@@ -17,17 +17,6 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 #define LED_GREEN led_matrix.Color(0, 10, 0)
 #define LED_BLUE  led_matrix.Color(0, 0, 10)
 #define LED_OFF   led_matrix.Color(0, 0, 0)
-
-
-void saveBoardID(byte id);
-uint8_t loadBoardID();
-
-void lockBoardID();
-void unlockBoardID();
-bool isLockedBoardID();
-
-void setPixels(uint8_t *input_data);
-void set_serial_mode(SerialMode mode);
 
 // Gamma correction improves appearance of midrange colors
 const uint8_t PROGMEM gamma8[] = {
@@ -60,7 +49,7 @@ uint16_t cmd_index = 0;
 boolean cmd_started = false;  // whether currently reading a cmd to the buffer
 boolean cmd_complete = false;  // whether the command string is complete
 
-int last_id_request_time = 0;
+unsigned long last_id_request_time = 0;
 bool boardID_requested = false;
 
 
@@ -72,44 +61,105 @@ void setup() {
 	pinMode(2, OUTPUT);			//NOT Receiveing Enable
 	pinMode(A5, OUTPUT);		//Driver Enable
 	Serial.begin(500000);
-	set_serial_mode(SerialMode::Receive);
+	set_serial_mode(Receive);
 }
+
 
 
 
 void loop() {
 	if (cmd_complete) {
+		/*
+		//DEBUG
+		set_serial_mode(Send);
+		Serial << (char)0xFE << "RECEIVED!" << (uint8_t)cmd_buffer[0] << " " << (uint8_t)cmd_buffer[1] << " " << (uint8_t)cmd_buffer[2] << " " << (uint8_t)cmd_buffer[3] << cmd_index << (char)0x25;
+		Serial.flush();
+		set_serial_mode(Receive);
+		///
+		*/
 		switch (cmd_buffer[cmd_index]) {
 		case '!':
-			set_serial_mode(SerialMode::Off);
+			set_serial_mode(Off);
 			setPixels((uint8_t*)cmd_buffer);
 			led_matrix.show();
 			//Data in Serial buffers is partial ("show" function disabled interrupts)
 			//Clean up Serial buffers before reading again
 			while (Serial.available()) { Serial.read(); }
-			set_serial_mode(SerialMode::Receive);
+			set_serial_mode(Receive);
 			break;
 		case '?':
 			if (busSeqNo == 255)
 				break;
 
-			delayMicroseconds((busSeqNo - 128) * 500 + 1); // delayMicroseconds(0) will wait for 16ms!!
-			set_serial_mode(SerialMode::Send);
+			delayMicroseconds(busSeqNo * 500 + 1); // delayMicroseconds(0) will wait for 16ms!!
+			set_serial_mode(Send);
 			Serial << (char)boardID << analogRead(2) << '.';
 			Serial.flush();
-			set_serial_mode(SerialMode::Receive);
+			set_serial_mode(Receive);
 			break;
+		
+		case (char)0x20:
+			if (cmd_index != 3)
+				break;
 
+			if (
+				cmd_buffer[0] == 'R' &&
+				cmd_buffer[1] == 'S' &&
+				cmd_buffer[2] == 'T'
+				){
+				/*
+				//DEBUG
+				set_serial_mode(Send);
+				Serial << (char)0xFE << "RESET" << (char)0x25;
+				Serial.flush();
+				set_serial_mode(Receive);
+				///
+				*/
+				boardID = BROADCAST_ID;
+				saveBoardID(boardID);
+			}
+			break;
 		case (char)0x23:
-			if (boardID_requested){
+			if (boardID_requested && cmd_index == 1){
+
 				boardID_requested = false;
-				saveBoardID(cmd_buffer[1]);
+				boardID = cmd_buffer[0];
+				/*
+				//DEBUG
+				set_serial_mode(Send);
+				Serial << (char)0xFE << "ID SET" << cmd_buffer[0] << (char)0x25;
+				Serial.flush();
+				set_serial_mode(Receive);
+				///
+				*/
+				
+				saveBoardID(boardID);
+			}
+			//If somebody hears it's id given away - it looks like master sent only "[id] [0x23]"
+			if (cmd_index == 0){
+				
+				//DEBUG
+				set_serial_mode(Send);
+				Serial << (char)0xFE << "LOST ID" << (char)0x25;
+				Serial.flush();
+				set_serial_mode(Receive);
+				///
+				boardID = BROADCAST_ID;
+				saveBoardID(boardID);
 			}
 			break;
 
-		case (char)0x25:
+		case (char)0x24:
+			set_serial_mode(Off);
+			delayMicroseconds((boardID - 128) * 500 + 1);
+			set_serial_mode(Send);
+			Serial << (char)boardID << (char)0x25;
+			Serial.flush();
+			while (Serial.available()) { Serial.read(); }
+			set_serial_mode(Receive);
+
+		case (char)0x26:
 			busSeqNo = cmd_buffer[1];
-			lockBoardID();
 			break;
 		}
 		cmd_complete = false;
@@ -118,7 +168,9 @@ void loop() {
 	if (boardID == BROADCAST_ID ){
 		//if request has just been sent don't get stuck here again for a while
 		if (last_id_request_time + 100 < millis() || last_id_request_time == 0){
+			set_serial_mode(Off);
 			while (analogRead(2) < 100){}
+			while (Serial.available()) { Serial.read(); }
 			last_id_request_time = millis();
 			requestID();
 		}
@@ -127,10 +179,10 @@ void loop() {
 
 void requestID(){
 	boardID_requested = true;
-	set_serial_mode(SerialMode::Send);
-	Serial << 0xFE << 0x22; //0xFE is nobody(only master listens to it), 0x22 is request for new ID
-	set_serial_mode(SerialMode::Receive);
-	
+	set_serial_mode(Send);
+	Serial << (char)0xFE << (char)0x22; //0xFE is nobody(only master listens to it), 0x22 is request for new ID
+	Serial.flush();
+	set_serial_mode(Receive);
 }
 
 void setPixels(uint8_t *input_data) {
@@ -152,7 +204,7 @@ void setPixels(uint8_t *input_data) {
 				input_data++;
 				data_side = 1;
 			}
-			else { data = 0;/*ERR*/ }
+			else { data = 0;} //ERR
 			intensity = pgm_read_byte(&gamma8[data]);
 			//Serial.println(data);
 			//Serial.println(((2-color_nr)*8));
@@ -166,36 +218,22 @@ void setPixels(uint8_t *input_data) {
 }
 
 
-
-//Set serial in sending or receiving mode
-// true -  send
-// false - receive
-
-//TODO: Add Turn off
-
-enum class SerialMode
-{
-	Off,
-	Send,
-	Receive,
-	SendReceive
-};
-
 void set_serial_mode(SerialMode mode){
 	switch (mode)
 	{
-	case SerialMode::Off:
+	case Off:
 		CLR(PORTC, 5);
 		SET(PORTD, 2);
-	case SerialMode::Send:
+		break;
+	case Send:
 		SET(PORTD, 2);
 		SET(PORTC, 5);
 		break;
-	case SerialMode::Receive:
+	case Receive:
 		CLR(PORTC, 5);
 		CLR(PORTD, 2);
 		break;
-	case SerialMode::SendReceive:
+	case SendReceive:
 		SET(PORTC, 5);
 		CLR(PORTD, 2);
 		break;
@@ -204,7 +242,6 @@ void set_serial_mode(SerialMode mode){
 
 
 void serialEvent() {
-
 	//Last command has not been consumed (yet) 
 	if (cmd_complete){
 		return;
@@ -215,8 +252,10 @@ void serialEvent() {
 	if (cmd_started){
 		cmd_buffer[cmd_index] = inChar;
 		if (
-			inChar == (char)0x23 || //Offer for ID
-			inChar == (char)0x25 || //Offer for Bus Sequence Number (BusSeqNo)
+			inChar == (char)0x20 || // RESET ID
+			inChar == (char)0x23 || // Offer for ID
+			inChar == (char)0x24 || // BoardPing
+			inChar == (char)0x26 || // Offer for Bus Sequence Number (BusSeqNo)
 			inChar == (char)0x00 || // - unused (remove this)?
 			inChar == '!'        || // Display data on LED's
 			inChar == '?'           // Request for sensor value
@@ -237,23 +276,21 @@ void serialEvent() {
 	}
 }
 
+
 void saveBoardID(uint8_t id){
+	/*//DEBUG
+	set_serial_mode(Send);
+	Serial << (char)0xFE <<"salvestasin EEPROM"<< id << (char)0x25;
+	Serial.flush();
+	set_serial_mode(Receive);
+	///
+	*/
+
 	EEPROM.write(0, id);
 }
+
 uint8_t loadBoardID(){
 	EEPROM.read(0);
-}
-void lockBoardID(){
-	EEPROM.write(1, 0);
-}
-void unlockBoardID(){
-	EEPROM.write(1, 255);
-}
-bool isLockedBoardID(){
-	if (EEPROM.read(1) == 0)
-		return true;
-	else
-		return false;
 }
 
 

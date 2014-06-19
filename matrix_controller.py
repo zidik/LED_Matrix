@@ -36,14 +36,14 @@ class App(object):
         ]
         """
 
-        board_bus.BoardBus.board_assignment = []
-        for i in range(10):
-            for j in range(10):
-                board_bus.BoardBus.board_assignment.append([128 + 10 * i + j, j, i])
+        board_bus.BoardBus._board_assignment = []
+        for y in range(10):
+            for x in range(10):
+                board_bus.BoardBus.add_assignation(128 + 10 * y + x, x, y)
 
         self.canvas_dims = 300, 300
 
-        self.mode = App.Mode.breaker
+        self.mode = App.Mode.test
 
         master.bind_all('<Escape>', lambda event: event.widget.quit())
         self.master = master
@@ -136,6 +136,11 @@ class App(object):
         #Start refreshing GUI
         self.master.after(0, self._refresh_gui)
 
+        # Enumerate boards
+        for bus in self.board_buses:
+            bus.enumerate_boards()
+
+
     def stop(self):
         self._stop.set()
         logging.debug("Waiting for app threads to stop")
@@ -164,9 +169,9 @@ class App(object):
 
             self.gui_fps.cycle_complete()
 
-            # Update FPS
-            for fps_manager in self.app_fps_list:
-                fps_manager.update_string_var()
+        # Update FPS
+        for fps_manager in self.app_fps_list:
+            fps_manager.update_string_var()
         # #UPDATE END
 
         temp_gui_string = ""
@@ -184,8 +189,7 @@ class App(object):
             self.master.after(sleep_time, self._refresh_gui)
 
     def update_data(self):
-        fps = 40
-
+        fps = 30
         # Game FPS
         game_fps_var = tkinter.StringVar()
         tkinter.Label(self.frame, textvariable=game_fps_var).pack()
@@ -199,7 +203,7 @@ class App(object):
             game = pong.Pong(self.surface_dims)
             self.assign_pong_keys_to_boardbuttons(game)
         elif self.mode == App.Mode.test:
-            game = test_pattern.TestPattern(self.surface_dims, board_bus.BoardBus.board_assignment, self.board_buses)
+            game = test_pattern.TestPattern(self.surface_dims, board_bus.BoardBus._board_assignment, self.board_buses)
         elif self.mode == App.Mode.breaker:
             game = breaker.Breaker(self.surface_dims)
             self.assign_breaker_keys_to_boardbuttons(game)
@@ -236,7 +240,7 @@ class App(object):
                 time.sleep(sleep_time)
 
     def refresh_sensor_data(self):
-        fps = 10
+        fps = 0  # TODO: not a real fps - serial converter causes trouble
         next_update = time.time()
 
         while not self._stop.isSet() and fps != 0:

@@ -14,16 +14,22 @@ class Board:
         self.sensor_value = -1
 
     def refresh_leds(self, led_values):
-        output_bytearray = bytearray([self.id])
-        output_bytearray += self.led_encoder(led_values)
-        output_bytearray += bytearray([ord("!")])
-        self.serial_connection.write(output_bytearray)
+        output = bytearray([self.id])
+        output += self.led_encoder(led_values)
+        output += bytearray([ord("!")])
+        self.write_to_serial(output)
 
     def read_sensor(self):
         """ Sends out command for board to answer with it's sensor value"""
-        output_bytearray = bytearray([self.id])
-        output_bytearray += bytearray([ord("?")])
-        self.serial_connection.write(output_bytearray)
+        output = bytearray([self.id])
+        output += bytearray([ord("?")])
+        self.write_to_serial(output)
+
+    def write_to_serial(self, data):
+        output = bytearray([ord("<")])
+        output += data
+        output += bytearray([ord(">")])
+        self.serial_connection.write(output)
 
     def set_sensor_value(self, value):
         if 0 <= value <= 1023:

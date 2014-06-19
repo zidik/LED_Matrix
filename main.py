@@ -11,8 +11,8 @@ __author__ = 'Mark Laane'
 #  "3" will open COM4,
 #  "4" will open COM5, etc
 
-#Open port COM5
-serial_ports = [4]
+# Open port COM6
+serial_ports = [8]
 
 #Open ports COM2 and COM5
 #serial_ports = [1,4]
