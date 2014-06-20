@@ -1,10 +1,14 @@
 #include <EEPROM.h>
 #include <Adafruit_NeoPixel.h>
-#include "customtypes.h"
-template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Add streaming operator to Serial (
+#include "serial485bus.h"
+#include "commands.h"
+
+template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Add streaming operator to Serial
 
 
 #define BROADCAST_ID  255  // ASCII character number that all boards listen to on serial port
+#define UNUSED_ID     254  // ASCII character number that all boards ignore on serial port. Only master listens to it
+
 #define NO_OF_PIXELS  100  // Number of leds on board
 #define LED_PIN        11  // Pin the LEDs are attached to
 #define BUFFER_SIZE   300  // Buffer for commands coming from serial
@@ -78,7 +82,7 @@ void loop() {
 		///
 		*/
 		switch (cmd_buffer[cmd_index]) {
-		case '!':
+		case (char)LedData:
 			set_serial_mode(Off);
 			setPixels((uint8_t*)cmd_buffer);
 			led_matrix.show();
@@ -87,18 +91,19 @@ void loop() {
 			while (Serial.available()) { Serial.read(); }
 			set_serial_mode(Receive);
 			break;
-		case '?':
+
+		case (char)ReqSensor:
 			if (busSeqNo == 255)
 				break;
-
-			delayMicroseconds(busSeqNo * 500 + 1); // delayMicroseconds(0) will wait for 16ms!!
+			//each responds in order, delaying proportionally to it's Sequence No
+			delayMicroseconds(busSeqNo * 500 + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
 			set_serial_mode(Send);
 			Serial << (char)boardID << analogRead(2) << '.';
 			Serial.flush();
 			set_serial_mode(Receive);
 			break;
-		
-		case (char)0x20:
+
+		case (char)ResetID:
 			if (cmd_index != 3)
 				break;
 
@@ -110,7 +115,7 @@ void loop() {
 				/*
 				//DEBUG
 				set_serial_mode(Send);
-				Serial << (char)0xFE << "RESET" << (char)0x25;
+				Serial << (char)0xFE << "RESET" << (char)PongToMaster;
 				Serial.flush();
 				set_serial_mode(Receive);
 				///
@@ -119,28 +124,27 @@ void loop() {
 				saveBoardID(boardID);
 			}
 			break;
-		case (char)0x23:
+
+		case (char)OfferID:
 			if (boardID_requested && cmd_index == 1){
+
+				set_serial_mode(Off);
+				fillPixels(led_matrix.Color(0, 0, 0));
+				while (Serial.available()) { Serial.read(); }
+				set_serial_mode(Receive);
+
 
 				boardID_requested = false;
 				boardID = cmd_buffer[0];
-				/*
-				//DEBUG
-				set_serial_mode(Send);
-				Serial << (char)0xFE << "ID SET" << cmd_buffer[0] << (char)0x25;
-				Serial.flush();
-				set_serial_mode(Receive);
-				///
-				*/
-				
+
 				saveBoardID(boardID);
 			}
-			//If somebody hears it's id given away - it looks like master sent only "[id] [0x23]"
+			//If somebody hears it's id given away - it looks like master sent only "[id] [OfferID]"
 			if (cmd_index == 0){
-				
+
 				//DEBUG
 				set_serial_mode(Send);
-				Serial << (char)0xFE << "LOST ID" << (char)0x25;
+				Serial << (char)0xFE << "LOST ID" << (char)PongToMaster;
 				Serial.flush();
 				set_serial_mode(Receive);
 				///
@@ -149,97 +153,50 @@ void loop() {
 			}
 			break;
 
-		case (char)0x24:
+		case (char)PingFromMaster:
 			set_serial_mode(Off);
-			delayMicroseconds((boardID - 128) * 500 + 1);
+			//each board responds to a ping in order, delaying proportionally to it's ID
+			delayMicroseconds((boardID - 128) * 500 + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
 			set_serial_mode(Send);
-			Serial << (char)boardID << (char)0x25;
+			Serial << (char)boardID << (char)PongToMaster;
 			Serial.flush();
 			while (Serial.available()) { Serial.read(); }
 			set_serial_mode(Receive);
 
-		case (char)0x26:
+		case (char)OfferSeqNo:
 			busSeqNo = cmd_buffer[1];
+			//DEBUG
+			set_serial_mode(Send);
+			Serial << (char)0xFE << "RECEIVED SEQ NO" << (char)PongToMaster;
+			Serial.flush();
+			set_serial_mode(Receive);
+			///
 			break;
 		}
 		cmd_complete = false;
 	}
 	//IF no board ID is set (it is the same as BC_ID) then just wait for buttonpress
-	if (boardID == BROADCAST_ID ){
+	if (boardID == BROADCAST_ID){
 		//if request has just been sent don't get stuck here again for a while
 		if (last_id_request_time + 100 < millis() || last_id_request_time == 0){
 			set_serial_mode(Off);
+			//Inform user, that we are waiting for push
+			fillPixels(led_matrix.Color(60, 0, 0));
+			//Wait until button is pressed
 			while (analogRead(2) < 100){}
-			while (Serial.available()) { Serial.read(); }
+			//Infor user, that push has been registred
+			fillPixels(led_matrix.Color(0, 0, 128));
 			last_id_request_time = millis();
-			requestID();
+			boardID_requested = true;
+			set_serial_mode(Send);
+			Serial << (char)UNUSED_ID << (char)RequestID;
+			Serial.flush();
+			//Empty input buffer
+			while (Serial.available()) { Serial.read(); }
+			set_serial_mode(Receive);
 		}
 	}
 }
-
-void requestID(){
-	boardID_requested = true;
-	set_serial_mode(Send);
-	Serial << (char)0xFE << (char)0x22; //0xFE is nobody(only master listens to it), 0x22 is request for new ID
-	Serial.flush();
-	set_serial_mode(Receive);
-}
-
-void setPixels(uint8_t *input_data) {
-	uint8_t data_side = 1; // Määrab ära, missugused 3 bitti järgmisena loetakse kas xx000xxx või xxxxx000
-	uint32_t color;    //Current color value
-	uint8_t data;      //Data recieved and decoded from serial 
-	uint8_t intensity;  //Intensity calculated from gammacorrection
-
-
-	for (uint8_t i = 0; i < NO_OF_PIXELS; i++){
-		color = 0;
-		for (uint8_t color_nr = 0; color_nr < 3; color_nr++){
-			if (data_side == 1){
-				data = ((*input_data & B00111000) << 2);
-				data_side = 2;
-			}
-			else if (data_side == 2) {
-				data = ((*input_data & B00000111) << 5);
-				input_data++;
-				data_side = 1;
-			}
-			else { data = 0;} //ERR
-			intensity = pgm_read_byte(&gamma8[data]);
-			//Serial.println(data);
-			//Serial.println(((2-color_nr)*8));
-			//Serial.println(((uint32_t)data << ((2-color_nr)*8)));
-			color |= ((uint32_t)intensity << ((2 - color_nr) * 8));
-			//Serial.println(color);
-		}
-		//Serial.println(color);
-		led_matrix.setPixelColor(i, color);
-	}
-}
-
-
-void set_serial_mode(SerialMode mode){
-	switch (mode)
-	{
-	case Off:
-		CLR(PORTC, 5);
-		SET(PORTD, 2);
-		break;
-	case Send:
-		SET(PORTD, 2);
-		SET(PORTC, 5);
-		break;
-	case Receive:
-		CLR(PORTC, 5);
-		CLR(PORTD, 2);
-		break;
-	case SendReceive:
-		SET(PORTC, 5);
-		CLR(PORTD, 2);
-		break;
-	}
-}
-
 
 void serialEvent() {
 	//Last command has not been consumed (yet) 
@@ -252,13 +209,13 @@ void serialEvent() {
 	if (cmd_started){
 		cmd_buffer[cmd_index] = inChar;
 		if (
-			inChar == (char)0x20 || // RESET ID
-			inChar == (char)0x23 || // Offer for ID
-			inChar == (char)0x24 || // BoardPing
-			inChar == (char)0x26 || // Offer for Bus Sequence Number (BusSeqNo)
-			inChar == (char)0x00 || // - unused (remove this)?
-			inChar == '!'        || // Display data on LED's
-			inChar == '?'           // Request for sensor value
+			inChar == (char)ResetID        ||
+			inChar == (char)OfferID        ||
+			inChar == (char)PingFromMaster ||
+			inChar == (char)OfferSeqNo     ||
+			inChar == (char)UNUSED         ||
+			inChar == (char)LedData        ||
+			inChar == (char)ReqSensor
 			){
 			cmd_complete = true;
 			cmd_started = false;
@@ -276,6 +233,44 @@ void serialEvent() {
 	}
 }
 
+void setPixels(uint8_t *input_data) {
+	uint8_t data_side = 1; // Määrab ära, missugused 3 bitti järgmisena loetakse kas xx000xxx või xxxxx000
+	uint32_t color;        //Current color value
+	uint8_t data;          //Data recieved and decoded from serial 
+	uint8_t intensity;     //Intensity calculated from gammacorrection
+
+
+	for (uint8_t i = 0; i < NO_OF_PIXELS; i++){
+		color = 0;
+		for (uint8_t color_nr = 0; color_nr < 3; color_nr++){
+			if (data_side == 1){
+				data = ((*input_data & B00111000) << 2);
+				data_side = 2;
+			}
+			else if (data_side == 2) {
+				data = ((*input_data & B00000111) << 5);
+				input_data++;
+				data_side = 1;
+			}
+			else { data = 0; } //ERR
+			intensity = pgm_read_byte(&gamma8[data]);
+			//Serial.println(data);
+			//Serial.println(((2-color_nr)*8));
+			//Serial.println(((uint32_t)data << ((2-color_nr)*8)));
+			color |= ((uint32_t)intensity << ((2 - color_nr) * 8));
+			//Serial.println(color);
+		}
+		//Serial.println(color);
+		led_matrix.setPixelColor(i, color);
+	}
+}
+
+void fillPixels(uint32_t color){
+	for (uint8_t i = 0; i < NO_OF_PIXELS; i++){
+		led_matrix.setPixelColor(i, color);
+	}
+	led_matrix.show();
+}
 
 void saveBoardID(uint8_t id){
 	/*//DEBUG
