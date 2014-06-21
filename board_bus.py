@@ -3,9 +3,8 @@ import threading
 import logging
 import time
 import queue
-from enum import Enum
 
-import ledBoard
+from ledBoard import Board, BROADCAST_ADDRESS
 
 
 class BoardBus(threading.Thread):
@@ -17,10 +16,6 @@ class BoardBus(threading.Thread):
         BoardBus._board_assignment.append([board_id, x, y])
         BoardBus._id_pool.put_nowait(board_id)
 
-    class Response(Enum):
-        request_id = 0x22
-        pong = 0x25
-        sensor = 0x2E
 
     def __init__(self, serial_connection, data, update_fps, sensor_fps):
         super().__init__()
@@ -38,9 +33,10 @@ class BoardBus(threading.Thread):
         self.ignored_buffer = ""
 
         self.boards = []  # list of boards connected to this bus
+        self.next_sequence_no = 0
 
-        #All boards will listen if data is sent to this board
-        self.broadcast_board = ledBoard.Board(ledBoard.BROADCAST_ADDRESS, self.serial_connection)
+        # All boards will listen if data is sent to this board
+        self.broadcast_board = Board(BROADCAST_ADDRESS, self.serial_connection)
 
         self.responses = []
         self.current_response = {}
@@ -60,7 +56,7 @@ class BoardBus(threading.Thread):
             if self.silence_until > time.time():
                 continue
 
-            ###### SENDING PART  #####
+            # ##### SENDING PART  #####
             if self._change_in_flags.wait():  # Wait until something happens
                 self._change_in_flags.clear()
 
@@ -136,15 +132,15 @@ class BoardBus(threading.Thread):
                 self.ignored_buffer += received_char
                 if received_char == '>':
                     self.ignoring_serial_echo = False
-                    logging.debug("Ignored data: " + self.ignored_buffer)
+                    logging.debug("Ignored data: \"{}\" ".format(self.ignored_buffer))
                     self.ignored_buffer = ""
                 continue  # This is echo, let's read next byte
 
             # If board ID received
             if 128 <= received_char_code < 255:
                 self.current_response['id'] = received_char_code
-            elif received_char_code in [response.value for response in BoardBus.Response]:
-                self.current_response['code'] = BoardBus.Response(received_char_code)
+            elif received_char_code in [command.value for command in Board.Command]:
+                self.current_response['code'] = Board.Command(received_char_code)
                 self.responses.append(self.current_response)
                 self.current_response = {}
             else:
@@ -157,35 +153,37 @@ class BoardBus(threading.Thread):
         while len(self.responses) > 0:
             response = self.responses.pop(0)
 
-            if response['code'] == BoardBus.Response.request_id:
+            if response['code'] == Board.Command.request_id:
                 self.assign_board_id()
 
-            elif response['code'] == BoardBus.Response.pong:
+            elif response['code'] == Board.Command.pong:
                 for board in self.boards:
                     if board.id == response["id"]:
                         logging.warning("This board is already enumerated.")
                 else:  # We have found a board not currently known
-                    logging.info("Board found:" + str(response["id"]))
-                    self.new_board(response["id"])
+                    logging.info("Board found: id={id}".format(**response))
+                    self.assign_board_seq_no(self.new_board(response["id"]))
 
-            elif response['code'] == BoardBus.Response.sensor:
+            elif response['code'] == Board.Command.sensor_data:
                 print(response)
                 for board in self.boards:
                     if board.id == response["id"]:
                         try:
                             board.set_sensor_value(int(response["data"]))
-                        except Exception:
-                            logging.debug("Setting sensor value failed:" + " data='" + str(response["data"]) + "'")
+                        except ValueError:
+                            logging.exception("Setting sensor value failed. response=".format(response))
                         break
                 else:
-                    logging.error(
-                        "Recieved sensor data from unknown board."
-                        + " id='" + str(response["id"]) + "'"
-                        + " data='" + str(response["data"]) + "'"
-                    )
+                    logging.error("Received sensor data from unknown board. id={id} data=\"{data}\"".format(**response))
+
+            elif response['code'] == Board.Command.debug:
+                try:
+                    print("Board debug: ID={id} Data=\"{data}\"".format(**response))
+                except KeyError:
+                    logging.exception("debug response didn't have ID or Data. response={}".format(response))
 
             else:
-                logging.error("UNKNOWN RESPONSE CODE")
+                logging.error("UNKNOWN RESPONSE CODE. Response={}".format(response))
 
     def assign_board_id(self):
         try:
@@ -193,57 +191,26 @@ class BoardBus(threading.Thread):
         except queue.Empty:
             logging.error("Unable to assign ID to board: There are more boards than assignations.")
             return
-        self.write_to_serial(bytearray([0xFF, board_id, 0x23]))
-        logging.debug("Assigned board id " + str(board_id))
+        self.broadcast_board.offer_board_id(board_id)
+        # TODO: Reenumerate after a delay
+        self.broadcast_board.enumerate()
 
-    def enumerate_boards(self):
-        self.write_to_serial(bytearray([0xFF, 0x24]))
-        logging.debug("Enumerating boards on " + self.serial_connection.name)
+    def assign_board_seq_no(self, board):
+        board.offer_sequence_number(self.next_sequence_no)
+        self.next_sequence_no += 1
 
 
-    # TODO - Remove serial connection from board
-    def write_to_serial(self, data):
-        output = bytearray([ord("<")])
-        output += data
-        output += bytearray([ord(">")])
-        self.serial_connection.write(output)
 
     def new_board(self, board_id):
         board = None
         for assignment in BoardBus._board_assignment:
             if assignment[0] == board_id:
-                board = ledBoard.Board(board_id, self.serial_connection, assignment[1], assignment[2])
-                logging.info("Assigned board " + str(board_id) +
-                             " col=" + str(assignment[1]) +
-                             " row=" + str(assignment[2]))
+                board = Board(board_id, self.serial_connection, assignment[1], assignment[2])
+                logging.info(
+                    "Assigned board {id} col={col} row={row}".format(id=board_id, col=assignment[1], row=assignment[2]))
                 self.boards.append(board)
                 break
         else:
-            logging.warning("Assignment for board " + str(board_id) + " not found")
+            logging.warning("Assignment for board {} not found".format(board_id))
 
         return board
-
-
-"""
-
-
-            # This code marks the end of value
-            elif received_char_code == 46:
-                if self.selected_board is not None:
-                    try:
-                        self.selected_board.set_sensor_value(int(self.read_buffer))
-                    except Exception:
-                        logging.debug("setting sensor failed: buffer='" + str(self.read_buffer) +
-                                      "' selected board=" + str(self.selected_board.id) + "'")
-                    self.selected_board = None
-                else:
-                    logging.debug("No board selected. buffer='" + str(self.read_buffer) + "'")
-            elif '0' <= received_char <= '9':
-                self.read_buffer += received_char
-            #elif received_char_code == 0:
-            #    pass  # TODO:Test:DUNNO WHY RANDOM ZEROES ON BUS?
-            else:
-                logging.debug("Invalid character received from serial. ascii_nr " + str(received_char_code)
-                              + " character:" + str(received_char))
-                #raise IOError("Invalid character received from serial")
-"""

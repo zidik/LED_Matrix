@@ -1,4 +1,8 @@
 #include "serial485bus.h"
+#include <Arduino.h>
+
+#define CLR(x,y) (x&=(~(1<<y)))
+#define SET(x,y) (x|=(1<<y))
 
 void set_serial_mode(SerialMode mode){
 	switch (mode)

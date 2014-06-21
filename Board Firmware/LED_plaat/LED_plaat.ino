@@ -13,8 +13,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 #define LED_PIN        11  // Pin the LEDs are attached to
 #define BUFFER_SIZE   300  // Buffer for commands coming from serial
 
-#define CLR(x,y) (x&=(~(1<<y)))
-#define SET(x,y) (x|=(1<<y))
+
 
 // common colors for convinience
 #define LED_RED   led_matrix.Color(10, 0, 0)
@@ -42,7 +41,6 @@ const uint8_t PROGMEM gamma8[] = {
 	218, 220, 223, 225, 227, 230, 232, 235, 237, 240, 242, 245, 247, 250, 252, 255
 };
 
-
 Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(NO_OF_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 uint8_t boardID = BROADCAST_ID;
@@ -66,6 +64,15 @@ void setup() {
 	pinMode(A5, OUTPUT);		//Driver Enable
 	Serial.begin(500000);
 	set_serial_mode(Receive);
+
+	/*
+	//DEBUG
+	set_serial_mode(Send);
+	Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("SETUP COMPLETE") << (char)DebugData;
+	Serial.flush();
+	set_serial_mode(Receive);
+	///
+	*/
 }
 
 
@@ -76,11 +83,13 @@ void loop() {
 		/*
 		//DEBUG
 		set_serial_mode(Send);
-		Serial << (char)0xFE << "RECEIVED!" << (uint8_t)cmd_buffer[0] << " " << (uint8_t)cmd_buffer[1] << " " << (uint8_t)cmd_buffer[2] << " " << (uint8_t)cmd_buffer[3] << cmd_index << (char)0x25;
+		Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("RECEIVED!") << (uint8_t)cmd_buffer[0] << " " << (uint8_t)cmd_buffer[1] << " " << (uint8_t)cmd_buffer[2] << " " << (uint8_t)cmd_buffer[3] << cmd_index << (char)DebugData;
 		Serial.flush();
 		set_serial_mode(Receive);
 		///
 		*/
+
+		
 		switch (cmd_buffer[cmd_index]) {
 		case (char)LedData:
 			set_serial_mode(Off);
@@ -98,8 +107,9 @@ void loop() {
 			//each responds in order, delaying proportionally to it's Sequence No
 			delayMicroseconds(busSeqNo * 500 + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
 			set_serial_mode(Send);
-			Serial << (char)boardID << analogRead(2) << '.';
+			Serial << (char)boardID << analogRead(2) << SensorData;
 			Serial.flush();
+			//Todo siia tyhjendamine?
 			set_serial_mode(Receive);
 			break;
 
@@ -112,14 +122,7 @@ void loop() {
 				cmd_buffer[1] == 'S' &&
 				cmd_buffer[2] == 'T'
 				){
-				/*
-				//DEBUG
-				set_serial_mode(Send);
-				Serial << (char)0xFE << "RESET" << (char)PongToMaster;
-				Serial.flush();
-				set_serial_mode(Receive);
-				///
-				*/
+
 				boardID = BROADCAST_ID;
 				saveBoardID(boardID);
 			}
@@ -141,13 +144,15 @@ void loop() {
 			}
 			//If somebody hears it's id given away - it looks like master sent only "[id] [OfferID]"
 			if (cmd_index == 0){
-
+				/*
 				//DEBUG
 				set_serial_mode(Send);
-				Serial << (char)0xFE << "LOST ID" << (char)PongToMaster;
+				Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("LOST ID") << (char)DebugData;
 				Serial.flush();
 				set_serial_mode(Receive);
 				///
+				*/
+
 				boardID = BROADCAST_ID;
 				saveBoardID(boardID);
 			}
@@ -162,15 +167,20 @@ void loop() {
 			Serial.flush();
 			while (Serial.available()) { Serial.read(); }
 			set_serial_mode(Receive);
+			break;
 
 		case (char)OfferSeqNo:
 			busSeqNo = cmd_buffer[1];
+			/*
 			//DEBUG
 			set_serial_mode(Send);
-			Serial << (char)0xFE << "RECEIVED SEQ NO" << (char)PongToMaster;
+			Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("RECEIVED!") << (uint8_t)cmd_buffer[0] << " " << (uint8_t)cmd_buffer[1] << " " << (uint8_t)cmd_buffer[2] << " " << (uint8_t)cmd_buffer[3] << cmd_index << (char)DebugData;
+			Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("RECEIVED SEQ NO") << busSeqNo << (char)DebugData;
 			Serial.flush();
 			set_serial_mode(Receive);
 			///
+			*/
+			
 			break;
 		}
 		cmd_complete = false;
@@ -213,7 +223,6 @@ void serialEvent() {
 			inChar == (char)OfferID        ||
 			inChar == (char)PingFromMaster ||
 			inChar == (char)OfferSeqNo     ||
-			inChar == (char)UNUSED         ||
 			inChar == (char)LedData        ||
 			inChar == (char)ReqSensor
 			){
@@ -273,14 +282,6 @@ void fillPixels(uint32_t color){
 }
 
 void saveBoardID(uint8_t id){
-	/*//DEBUG
-	set_serial_mode(Send);
-	Serial << (char)0xFE <<"salvestasin EEPROM"<< id << (char)0x25;
-	Serial.flush();
-	set_serial_mode(Receive);
-	///
-	*/
-
 	EEPROM.write(0, id);
 }
 

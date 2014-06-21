@@ -3,18 +3,19 @@
 
 enum Command
 {
-	LedData        = 0x21, //Master sends data to LED's
-	ReqSensor      = 0x3F, //Master requests current sensor value
-	ResetID        = 0x20, //Master forces to reset id
-	OfferID        = 0x23, //Master is offering a new ID
-	PingFromMaster = 0x24, //Master pings board
-	OfferSeqNo     = 0x26, //Master is offering a Bus Sequence Number
-	UNUSED         = 0x00, //TODO: TEST REMOVAL OF THIS
-
-	PongToMaster   = 0x25, //Board responds to Master's ping
-	RequestID      = 0x22, //Board requests ID from Master
+	// From Master to Board
+	ResetID        = 0x01, //Master forces to reset id
+	OfferID        = 0x03, //Master is offering a new ID
+	PingFromMaster = 0x04, //Master pings board
+	OfferSeqNo     = 0x06, //Master is offering a Bus Sequence Number
+	LedData        = 0x10, //Master sends data to LED's
+	ReqSensor      = 0x11, //Master requests current sensor value
 	
-
+	// From Board to Master
+	RequestID      = 0x02, //Board requests ID from Master
+	PongToMaster   = 0x05, //Board responds to Master's ping
+	SensorData     = 0x12, //Board sends sensor value to Master
+	DebugData      = 0x1F, //Board sends debug data to master
 
 };
 

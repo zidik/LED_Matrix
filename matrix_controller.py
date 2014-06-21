@@ -138,8 +138,8 @@ class App(object):
 
         # Enumerate boards
         for bus in self.board_buses:
-            bus.enumerate_boards()
-
+            assert isinstance(bus, board_bus.BoardBus)
+            bus.broadcast_board.enumerate()
 
     def stop(self):
         self._stop.set()
@@ -189,7 +189,7 @@ class App(object):
             self.master.after(sleep_time, self._refresh_gui)
 
     def update_data(self):
-        fps = 30
+        fps = 0
         # Game FPS
         game_fps_var = tkinter.StringVar()
         tkinter.Label(self.frame, textvariable=game_fps_var).pack()
@@ -240,7 +240,7 @@ class App(object):
                 time.sleep(sleep_time)
 
     def refresh_sensor_data(self):
-        fps = 0  # TODO: not a real fps - serial converter causes trouble
+        fps = 10  # TODO: not a real fps - serial converter causes trouble
         next_update = time.time()
 
         while not self._stop.isSet() and fps != 0:
