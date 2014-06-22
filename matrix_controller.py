@@ -127,7 +127,7 @@ class App(object):
         # Enumerate boards
         for bus in self.board_buses:
             assert isinstance(bus, board_bus.BoardBus)
-            bus.broadcast_board.enumerate()
+            bus.broadcast_board.ping()
 
     def stop(self):
         self._stop.set()
@@ -201,7 +201,7 @@ class App(object):
             game = pong.Pong(self.surface_dims)
             self.assign_pong_keys_to_boardbuttons(game)
         elif self.mode == App.Mode.test:
-            game = test_pattern.TestPattern(self.surface_dims, board_bus.BoardBus._board_assignment, self.board_buses)
+            game = test_pattern.TestPattern(self.surface_dims, board_bus.BoardBus.board_assignment, self.board_buses)
         elif self.mode == App.Mode.breaker:
             game = breaker.Breaker(self.surface_dims)
             self.assign_breaker_keys_to_boardbuttons(game)
@@ -253,7 +253,7 @@ class App(object):
     def signal_update_gui_and_boards(self):
         self.update_flags = {'GUI': True}
         for bus in self.board_buses:
-            bus.update()
+            bus.refresh_leds()
 
     def find_board(self, board_id):
         for bus in self.board_buses:

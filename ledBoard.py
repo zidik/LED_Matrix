@@ -7,7 +7,11 @@ BROADCAST_ADDRESS = 255
 
 
 class Board:
+    """
+    This class describes all properties and functions of one LED board.
+    """
     class Command(Enum):
+        """ All command-codes sent over serial """
         # From Board to Master
         request_id = 0x02
         pong = 0x05
@@ -31,35 +35,71 @@ class Board:
 
     # TODO: move some of those commands to BroadcastBoard
     def reset_id(self):
+        """
+        Resets board's ID to broadcast address.
+
+        (This causes board to stop and wait for user to press it's pressure-sensor.
+        Board will ask for new ID when user presses the sensor.)
+        """
         self._send_command(Board.Command.reset_id, bytearray([ord('R'), ord('S'), ord('T')]))
         if self.id == BROADCAST_ADDRESS:
             logging.debug("Reset all board ID's on " + self.serial_connection.name)
         else:
             logging.debug("Reset board {} on {}".format(self.id, self.serial_connection.name))
 
-    def offer_board_id(self, board_id):
+    def assign_board_id(self, board_id):
+        """
+        Assigns board a new ID
+
+        Args:
+            board_id: new ID for board
+        """
         self._send_command(Board.Command.offer_id, bytearray([board_id]))
         logging.debug("Assigned board id {}".format(board_id))
 
-    def offer_sequence_number(self, sequence_number):
+    def assign_sequence_number(self, sequence_number):
+        """
+        Assigns board a new sequence number
+
+        Args:
+            sequence_number: new sequence number for board
+        """
         self._send_command(Board.Command.offer_sequence_number, bytearray([sequence_number]))
         logging.debug("Assigned board id={} sequence number {}".format(self.id, sequence_number))
 
-    def enumerate(self):
+    def ping(self):
+        """
+        Pings board - all boards on bus (with ID's) will answer in sequence (in order of their ID)
+        """
         self._send_command(Board.Command.ping_from_master)
         if self.id == BROADCAST_ADDRESS:
-            logging.debug("Enumerating boards on " + self.serial_connection.name)
+            logging.debug("Pinging boards on " + self.serial_connection.name)
         else:
-            logging.debug("Enumerating board {} on {}".format(self.id, self.serial_connection.name))
+            logging.debug("Pinging board {} on {}".format(self.id, self.serial_connection.name))
 
     def refresh_leds(self, led_values):
+        """
+        Sends data to be displayed on board's LED's
+        Args:
+            led_values: list of LED values
+        """
         self._send_command(Board.Command.send_led_data, self.led_encoder(led_values))
 
     def read_sensor(self):
-        """ Sends out command for board to answer with it's sensor value"""
+        """
+        Sends out command for board to answer with it's sensor value
+        """
         self._send_command(Board.Command.request_sensor)
 
     def _send_command(self, command, data=None):
+        """
+        Sends command with board's ID and command code.
+        Encloses command  with start and stop marks, so it is easy to filter echo.
+
+        Args:
+            command: command to send
+            data: data to send with command
+        """
         output = bytearray([ord("<")])
 
         output += bytearray([self.id])
@@ -72,12 +112,22 @@ class Board:
         self.serial_connection.write(output)
 
     def set_sensor_value(self, value):
+        """
+        Sets sensor's value.
+        Args:
+            value: new sensor value
+        Raises:
+            ValueError: If value is outside ADC output boundaries.
+        """
         if 0 <= value <= 1023:
             self.sensor_value = value
         else:
             raise ValueError("attempt to set sensor value to {}".format(value))
 
     def is_button_pressed(self):
+        """
+        Tests if pressure sensor is currently pressed.
+        """
         if self.sensor_value > 100:
             return True
         else:
