@@ -43,7 +43,7 @@ class App(object):
 
         self.canvas_dims = 300, 300
 
-        self.mode = App.Mode.test
+        self.mode = App.Mode.pong
 
         master.bind_all('<Escape>', lambda event: event.widget.quit())
         self.master = master
@@ -70,7 +70,7 @@ class App(object):
         serial_connections = []
         for port in serial_ports:
             try:
-                serial_connections.append(serial.Serial(port=port, baudrate=500000))
+                serial_connections.append(serial.Serial(port=port, baudrate=500000, writeTimeout=0))
             except serial.SerialException as e:
                 logging.warning("Unable to open serial port")
                 logging.exception(e)
@@ -88,23 +88,11 @@ class App(object):
         self.board_buses = []
 
         for connection in serial_connections:
-            update_fps_var = tkinter.StringVar()
-            tkinter.Label(self.frame, textvariable=update_fps_var).pack()
-            update_fps = fpsManager.FpsManager(
-                string_var=update_fps_var,
-                string_var_text=str(connection.name) + " update: {} FPS"
-            )
-            self.app_fps_list.append(update_fps)
+            update_fps = self._add_fps_counter_and_label(str(connection.name) + " update: {} FPS")
+            sensor_fps = self._add_fps_counter_and_label(str(connection.name) + " sensor REQ: {} FPS")
+            sensor_response_fps = self._add_fps_counter_and_label(str(connection.name) + " sensor response: {} FPS")
 
-            sensor_fps_var = tkinter.StringVar()
-            tkinter.Label(self.frame, textvariable=sensor_fps_var).pack()
-            sensor_fps = fpsManager.FpsManager(
-                string_var=sensor_fps_var,
-                string_var_text=str(connection.name) + " sensor: {} FPS"
-            )
-            self.app_fps_list.append(sensor_fps)
-
-            new_bus = board_bus.BoardBus(connection, self.data, update_fps, sensor_fps)
+            new_bus = board_bus.BoardBus(connection, self.data, update_fps, sensor_fps, sensor_response_fps)
             self.board_buses.append(new_bus)
 
         #Sensor value display
@@ -155,6 +143,16 @@ class App(object):
                 bus.join()
         logging.debug("App stopped")
 
+    def _add_fps_counter_and_label(self, text):
+        fps_var = tkinter.StringVar()
+        tkinter.Label(self.frame, textvariable=fps_var).pack()
+        fps = fpsManager.FpsManager(
+            string_var=fps_var,
+            string_var_text=text
+        )
+        self.app_fps_list.append(fps)
+        return fps
+
     def _refresh_gui(self):
         fps = 50
         next_update = time.time()
@@ -189,7 +187,7 @@ class App(object):
             self.master.after(sleep_time, self._refresh_gui)
 
     def update_data(self):
-        fps = 0
+        fps = 30
         # Game FPS
         game_fps_var = tkinter.StringVar()
         tkinter.Label(self.frame, textvariable=game_fps_var).pack()
@@ -240,7 +238,7 @@ class App(object):
                 time.sleep(sleep_time)
 
     def refresh_sensor_data(self):
-        fps = 10  # TODO: not a real fps - serial converter causes trouble
+        fps = 30  # TODO: not a real fps - serial converter causes trouble
         next_update = time.time()
 
         while not self._stop.isSet() and fps != 0:

@@ -101,17 +101,21 @@ void loop() {
 			set_serial_mode(Receive);
 			break;
 
-		case (char)ReqSensor:
+		case (char)ReqSensor:{
 			if (busSeqNo == 255)
 				break;
+
+			unsigned long startTime = micros();
+			int resultADC = analogRead(2); //Takes about 100microseconds
+			uint16_t slotTime = 500; // time in microseconds given for each board on bus
 			//each responds in order, delaying proportionally to it's Sequence No
-			delayMicroseconds(busSeqNo * 500 + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
+			while (micros() - startTime < (uint16_t)busSeqNo * slotTime){}
 			set_serial_mode(Send);
-			Serial << (char)boardID << analogRead(2) << SensorData;
+			Serial << (char)boardID << resultADC << (char)SensorData;
 			Serial.flush();
 			//Todo siia tyhjendamine?
 			set_serial_mode(Receive);
-			break;
+		} break;
 
 		case (char)ResetID:
 			if (cmd_index != 3)
@@ -124,7 +128,7 @@ void loop() {
 				){
 
 				boardID = BROADCAST_ID;
-				saveBoardID(boardID);
+				saveBoardID();
 			}
 			break;
 
@@ -136,11 +140,9 @@ void loop() {
 				while (Serial.available()) { Serial.read(); }
 				set_serial_mode(Receive);
 
-
 				boardID_requested = false;
 				boardID = cmd_buffer[0];
-
-				saveBoardID(boardID);
+				saveBoardID();
 			}
 			//If somebody hears it's id given away - it looks like master sent only "[id] [OfferID]"
 			if (cmd_index == 0){
@@ -154,7 +156,7 @@ void loop() {
 				*/
 
 				boardID = BROADCAST_ID;
-				saveBoardID(boardID);
+				saveBoardID();
 			}
 			break;
 
@@ -281,8 +283,8 @@ void fillPixels(uint32_t color){
 	led_matrix.show();
 }
 
-void saveBoardID(uint8_t id){
-	EEPROM.write(0, id);
+void saveBoardID(){
+	EEPROM.write(0, boardID);
 }
 
 uint8_t loadBoardID(){

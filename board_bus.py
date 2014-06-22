@@ -3,6 +3,7 @@ import threading
 import logging
 import time
 import queue
+import math
 
 from ledBoard import Board, BROADCAST_ADDRESS
 
@@ -17,12 +18,13 @@ class BoardBus(threading.Thread):
         BoardBus._id_pool.put_nowait(board_id)
 
 
-    def __init__(self, serial_connection, data, update_fps, sensor_fps):
+    def __init__(self, serial_connection, data, update_fps, sensor_fps, sensor_response_fps):
         super().__init__()
         self.serial_connection = serial_connection
         self.data = data
         self.update_fps = update_fps
         self.sensor_fps = sensor_fps
+        self.sensor_response_fps = sensor_response_fps
 
         self._change_in_flags = threading.Event()  # something has changed (signal thread to continue)
         self._stop_flag = False  # event used to stop the thread
@@ -118,7 +120,9 @@ class BoardBus(threading.Thread):
         this causes some of data to be read out next cycle
         """
         self.broadcast_board.read_sensor()
-        self.silence_until = time.time() + 0.01  # read answers for 10ms (should be enough for less than 20 boards)
+        number_of_boards = self.next_sequence_no
+        slot_time = 500  # Time for each board in microseconds
+        self.silence_until = time.time() + (math.ceil(number_of_boards * 500) / 1000) / 1000
 
     def _receive_data_from_bus(self):
         while self.serial_connection.inWaiting():
@@ -138,6 +142,9 @@ class BoardBus(threading.Thread):
 
             # If board ID received
             if 128 <= received_char_code < 255:
+                if self.current_response != {}:
+                    logging.error("incomplete data from bus: {}".format(self.current_response))
+                self.current_response = dict()
                 self.current_response['id'] = received_char_code
             elif received_char_code in [command.value for command in Board.Command]:
                 self.current_response['code'] = Board.Command(received_char_code)
@@ -165,7 +172,7 @@ class BoardBus(threading.Thread):
                     self.assign_board_seq_no(self.new_board(response["id"]))
 
             elif response['code'] == Board.Command.sensor_data:
-                print(response)
+                self.sensor_response_fps.cycle_complete()
                 for board in self.boards:
                     if board.id == response["id"]:
                         try:
@@ -178,7 +185,7 @@ class BoardBus(threading.Thread):
 
             elif response['code'] == Board.Command.debug:
                 try:
-                    print("Board debug: ID={id} Data=\"{data}\"".format(**response))
+                    logging.debug("Board debug: ID={id} Data=\"{data}\"".format(**response))
                 except KeyError:
                     logging.exception("debug response didn't have ID or Data. response={}".format(response))
 

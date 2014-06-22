@@ -29,29 +29,37 @@ class Board:
         self.row = row
         self.sensor_value = -1
 
-    def refresh_leds(self, led_values):
-        self.send_command(Board.Command.send_led_data, self.led_encoder(led_values))
+    # TODO: move some of those commands to BroadcastBoard
+    def reset_id(self):
+        self._send_command(Board.Command.reset_id, bytearray([ord('R'), ord('S'), ord('T')]))
+        if self.id == BROADCAST_ADDRESS:
+            logging.debug("Reset all board ID's on " + self.serial_connection.name)
+        else:
+            logging.debug("Reset board {} on {}".format(self.id, self.serial_connection.name))
 
-    def read_sensor(self):
-        """ Sends out command for board to answer with it's sensor value"""
-        self.send_command(Board.Command.request_sensor)
+    def offer_board_id(self, board_id):
+        self._send_command(Board.Command.offer_id, bytearray([board_id]))
+        logging.debug("Assigned board id {}".format(board_id))
 
     def offer_sequence_number(self, sequence_number):
-        self.send_command(Board.Command.offer_sequence_number, bytearray([sequence_number]))
+        self._send_command(Board.Command.offer_sequence_number, bytearray([sequence_number]))
         logging.debug("Assigned board id={} sequence number {}".format(self.id, sequence_number))
 
     def enumerate(self):
-        self.send_command(Board.Command.ping_from_master)
+        self._send_command(Board.Command.ping_from_master)
         if self.id == BROADCAST_ADDRESS:
             logging.debug("Enumerating boards on " + self.serial_connection.name)
         else:
             logging.debug("Enumerating board {} on {}".format(self.id, self.serial_connection.name))
 
-    def offer_board_id(self, board_id):
-        self.send_command(Board.Command.offer_id, bytearray([board_id]))
-        logging.debug("Assigned board id {}".format(board_id))
+    def refresh_leds(self, led_values):
+        self._send_command(Board.Command.send_led_data, self.led_encoder(led_values))
 
-    def send_command(self, command, data=None):
+    def read_sensor(self):
+        """ Sends out command for board to answer with it's sensor value"""
+        self._send_command(Board.Command.request_sensor)
+
+    def _send_command(self, command, data=None):
         output = bytearray([ord("<")])
 
         output += bytearray([self.id])
