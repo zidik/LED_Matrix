@@ -12,7 +12,7 @@ __author__ = 'Mark Laane'
 #  "4" will open COM5, etc
 
 # Open port COM6
-serial_ports = [8]
+serial_ports = [2]
 
 #Open ports COM2 and COM5
 #serial_ports = [1,4]
@@ -21,18 +21,18 @@ serial_ports = [8]
 import tkinter
 import logging
 
-import matrix_controller
+from GUI_app import GUIapp
 
 
 def main():
-    logging.basicConfig(format='[%(asctime)s] [%(threadName)10s] %(levelname)7s: %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format='[%(asctime)s] [%(threadName)12s] %(levelname)7s: %(message)s', level=logging.DEBUG)
 
     logging.info("Starting up...")
     root = tkinter.Tk()
     root.geometry("300x750+50+50")
     root.title("LED control panel")
 
-    app = matrix_controller.App(root, serial_ports)
+    app = GUIapp(root, serial_ports)
 
     logging.debug("Entering tkinter mainloop")
     root.mainloop()

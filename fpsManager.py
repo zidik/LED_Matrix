@@ -1,31 +1,29 @@
-__author__ = 'Mark'
+__author__ = 'Mark Laane'
 
 import time
+import threading
 
 
 class FpsManager:
-    def __init__(self, update_period=0.02, fps_period=1.0, string_var=None, string_var_text="{}FPS"):
-        self.update_period = update_period
+    def __init__(self, fps_period=1.0):
         self.fps_period = fps_period
-        self.string_var = string_var
-        self.string_var_text = string_var_text
 
-        self.last_update = time.time()
-        self.current_fps = 0
-        self.data = []
+        self.current_fps = 0.0
+
+        self._samples = []
+
+        fps_thread = threading.Thread(target=self.update, name="FPS_thread", daemon=True)
+        fps_thread.start()
 
     def cycle_complete(self):
-        self.data.append(time.time())
+        self._samples.append(time.time())
 
-        if time.time() - self.last_update > self.update_period:
-            self.last_update = time.time()
+    def update(self):
+        while True:
             curr_time = time.time()
-            self.data = [cycle for cycle in self.data if curr_time - cycle < self.fps_period]
-            self.current_fps = len(self.data) / self.fps_period
+            # filter out samples older than (curr_time-fps_period)
+            self._samples = [cycle for cycle in self._samples if curr_time - cycle < self.fps_period]
+            #find fps
+            self.current_fps = len(self._samples) / self.fps_period
+            time.sleep(0.02)
 
-            # Can be omitted if it is called from somewhere else
-            # self.update_string_var()
-
-    def update_string_var(self):
-        if self.string_var is not None:
-            self.string_var.set(self.string_var_text.format(self.current_fps))

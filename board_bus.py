@@ -1,4 +1,4 @@
-__author__ = 'Mark'
+__author__ = 'Mark Laane'
 import threading
 import logging
 import time
@@ -6,6 +6,7 @@ import queue
 import math
 
 from ledBoard import Board, BROADCAST_ADDRESS
+from fpsManager import FpsManager
 
 
 class BoardBus(threading.Thread):
@@ -15,28 +16,29 @@ class BoardBus(threading.Thread):
     Each bus has it's own thread.
     """
 
-    _board_assignment = []
+    board_assignment = []
     _id_pool = queue.Queue()
-
-    @property
-    def board_assignment(self):
-        return self._board_assignment
 
     @staticmethod
     def add_assignation(board_id, x, y):
         """
         Adds assignation to a list so bus knows what part of image data to send to board with specified ID. (when found)
         """
-        BoardBus._board_assignment.append([board_id, x, y])
+        BoardBus.board_assignment.append([board_id, x, y])
         BoardBus._id_pool.put_nowait(board_id)
 
-    def __init__(self, serial_connection, data, update_fps, sensor_fps, sensor_response_fps):
+    def __init__(self, serial_connection, data):
         super().__init__()
         self.serial_connection = serial_connection
         self.data = data
-        self.update_fps = update_fps
-        self.sensor_fps = sensor_fps
-        self.sensor_response_fps = sensor_response_fps
+
+        self.fps = {
+            "LED update": FpsManager(),
+            "Sensor poll": FpsManager(),
+            "Sensor response": FpsManager()
+        }
+
+        self.name = "{} Thread".format(self.serial_connection.name)
 
         self._change_in_flags = threading.Event()  # something has changed (signal thread to continue)
         self._stop_flag = False  # event used to stop the thread
@@ -70,28 +72,37 @@ class BoardBus(threading.Thread):
                 continue
 
             # ##### SENDING PART  #####
+            # TODO: IS this a bug? - program might get stuck here and not recieve data from bus if nothing is sent.
+            # TODO: Maybe add timeout
             if self._change_in_flags.wait():  # Wait until something happens
                 self._change_in_flags.clear()
 
                 if self._update_display_flag:
                     self._update_display_flag = False  # TODO: TEST with this commented (possible bug seen wit one board)
                     self._refresh_leds()  # If given, update image on boards
-                    self.update_fps.cycle_complete()
+                    self.fps["LED update"].cycle_complete()
 
                 if self._update_sensors_flag:
                     self._update_sensors_flag = False
                     self._read_sensors()
-                    self.sensor_fps.cycle_complete()
+                    self.fps["Sensor poll"].cycle_complete()
 
         logging.info(self.serial_connection.name + " serial update thread stopped")
         self.turn_off_boards()
+
+    def join(self, timeout=None):
+        """
+        Stop the thread
+        """
+        self.stop()
+        threading.Thread.join(self, timeout)
 
     def stop(self):
         """
         Signals thread to stop gracefully after finishing current loop cycle.
         """
         self._stop_flag = True
-        self._change_in_flags.set()
+        self._change_in_flags.set()  # Let thread continue
 
     def refresh_leds(self):
         """
@@ -159,7 +170,7 @@ class BoardBus(threading.Thread):
                 self.ignored_buffer += received_char
                 if received_char == '>':
                     self.ignoring_serial_echo = False
-                    logging.debug("Ignored data: \"{}\" ".format(self.ignored_buffer))
+                    # logging.debug("Ignored data: \"{}\" ".format(self.ignored_buffer))
                     self.ignored_buffer = ""
                 continue  # This is echo, let's read next byte
 
@@ -200,7 +211,7 @@ class BoardBus(threading.Thread):
                     self._assign_board_seq_no(new_board)
 
             elif response['code'] == Board.Command.sensor_data:
-                self.sensor_response_fps.cycle_complete()
+                self.fps["Sensor response"].cycle_complete()
                 for board in self.boards:
                     if board.id == response["id"]:
                         try:
@@ -227,7 +238,7 @@ class BoardBus(threading.Thread):
             logging.error("Unable to assign ID to board: There are more boards than assignations.")
             return
         self.broadcast_board.assign_board_id(board_id)
-        # TODO: Reenumerate after a delay
+        # TODO: Re enumerate after a delay (measure how long board takes to return to normal state)
         self.broadcast_board.ping()
 
     def _assign_board_seq_no(self, board):
@@ -236,7 +247,7 @@ class BoardBus(threading.Thread):
 
     def _new_board(self, board_id):
         board = None
-        for assignment in BoardBus._board_assignment:
+        for assignment in BoardBus.board_assignment:
             if assignment[0] == board_id:
                 board = Board(board_id, self.serial_connection, assignment[1], assignment[2])
                 logging.info(

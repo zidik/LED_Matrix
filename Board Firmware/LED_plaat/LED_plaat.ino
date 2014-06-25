@@ -162,6 +162,7 @@ void loop() {
 
 		case (char)PingFromMaster:
 			set_serial_mode(Off);
+			//TODO: Board does not need to wait, if it was an UNICAST
 			//each board responds to a ping in order, delaying proportionally to it's ID
 			delayMicroseconds((boardID - 128) * 500 + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
 			set_serial_mode(Send);
