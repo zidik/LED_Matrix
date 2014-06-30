@@ -22,9 +22,14 @@ import tkinter
 import logging
 
 from GUI_app import GUIapp
+from matrix_controller import MatrixController
+
+
+app = None
 
 
 def main():
+    global app
     logging.basicConfig(format='[%(asctime)s] [%(threadName)12s] %(levelname)7s: %(message)s', level=logging.DEBUG)
 
     logging.info("Starting up...")
@@ -32,7 +37,8 @@ def main():
     root.geometry("300x750+50+50")
     root.title("LED control panel")
 
-    app = GUIapp(root, serial_ports)
+    matrix_controller = MatrixController(serial_ports, update_gui)
+    app = GUIapp(root, matrix_controller)
 
     logging.debug("Entering tkinter mainloop")
     root.mainloop()
@@ -40,6 +46,12 @@ def main():
     logging.debug("Tkinter mainloop has exited...")
     app.stop()
     logging.info("Stopped.")
+
+
+def update_gui():
+    global app
+    if app is not None:
+        app.update()
 
 
 if __name__ == '__main__':

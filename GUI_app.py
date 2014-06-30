@@ -7,7 +7,6 @@ import time
 import PIL.Image
 import PIL.ImageTk
 
-from matrix_controller import MatrixController
 from fpsManager import FpsManager
 from board_bus import BoardBus
 from breaker import Breaker
@@ -21,9 +20,9 @@ class GUIapp:
         pong = 1
         breaker = 2
 
-    def __init__(self, master, serial_ports):
+    def __init__(self, master, matrix_controller):
         self.mode = GUIapp.Mode.pong
-        self.matrix_controller = MatrixController(serial_ports, self.update)
+        self.matrix_controller = matrix_controller
         self.canvas_dims = 300, 300
 
         self.master = master
