@@ -23,28 +23,35 @@ import logging
 
 from GUI_app import GUIapp
 from matrix_controller import MatrixController
+from webserver import MatrixWebserver
 
 
 app = None
-
 
 def main():
     global app
     logging.basicConfig(format='[%(asctime)s] [%(threadName)12s] %(levelname)7s: %(message)s', level=logging.DEBUG)
 
     logging.info("Starting up...")
+
+    matrix_controller = MatrixController(serial_ports, update_gui)
+
+    #Webserver
+    webserver = MatrixWebserver(matrix_controller, address="localhost", port=80)
+    webserver.start()
+
+    #GUI
     root = tkinter.Tk()
     root.geometry("300x750+50+50")
     root.title("LED control panel")
-
-    matrix_controller = MatrixController(serial_ports, update_gui)
     app = GUIapp(root, matrix_controller)
 
     logging.debug("Entering tkinter mainloop")
     root.mainloop()
 
     logging.debug("Tkinter mainloop has exited...")
-    app.stop()
+    webserver.join()
+    matrix_controller.stop()
     logging.info("Stopped.")
 
 

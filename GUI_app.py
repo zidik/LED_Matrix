@@ -72,10 +72,6 @@ class GUIapp:
     def update(self):
         self._data_updated = True
 
-    def stop(self):
-        self._stop = True
-        self.matrix_controller.stop()
-
     def _refresh_gui(self):
         fps = 50
         next_update = time.time() + 1.0 / fps
@@ -100,8 +96,8 @@ class GUIapp:
         if sleep_time <= 0:
             sleep_time = 1  # sleep at least a little
 
-        if not self._stop:
-            self.master.after(sleep_time, self._refresh_gui)
+        #Loop
+        self.master.after(sleep_time, self._refresh_gui)
 
     def update_gui_fps(self):
         self.gui_fps_var.set("GUI fps={}".format(self.gui_fps.current_fps))
