@@ -6,17 +6,20 @@ import cgi
 import logging
 import threading
 
+from game_controller import GameController
+
 
 class MatrixWebserver(threading.Thread):
-    def __init__(self, matrix_controller, address="localhost", port=80):
+    def __init__(self, game_controller, address="localhost", port=80):
         super().__init__()
-        self.matrix_controller = matrix_controller
         self.name = "Server thread"
         self.server = HTTPServer((address, port), MyHTTPRequestHandler)
+        MyHTTPRequestHandler.game_controller = game_controller
 
     def run(self):
         logging.info("Server started.")
         self.server.serve_forever()
+
 
     def join(self, timeout=None):
         self.server.shutdown()
@@ -25,46 +28,41 @@ class MatrixWebserver(threading.Thread):
 
 
 class MyHTTPRequestHandler(BaseHTTPRequestHandler):
-
+    game_controller = None
     def do_GET(self):
         try:
             if self.path == "/":
-                self.path = "test.html"
+                self.path = "index.html"
 
-            send_reply = False
-            mime_type = None
             if self.path.endswith(".html"):
                 mime_type = 'text/html'
-                send_reply = True
             # if self.path.endswith(".jpg"):
             #     mime_type = 'image/jpg'
-            #     send_reply = True
             # if self.path.endswith(".gif"):
             #     mime_type = 'image/gif'
-            #     send_reply = True
-            # if self.path.endswith(".js"):
-            #     mime_type = 'application/javascript'
-            #     send_reply = True
-            # if self.path.endswith(".css"):
-            #     mime_type = 'text/css'
-            #     send_reply = True
+            elif self.path.endswith(".js"):
+                mime_type = 'application/javascript'
+            elif self.path.endswith(".css"):
+                mime_type = 'text/css'
+            else:
+                self.send_error(404, "File Not Found: {} (ext. not supported)".format(self.path))
+                return
 
-            if send_reply:
-                # Open the static file requested and send it
-                try:
-                    #with open(os.curdir + os.sep + self.path) as f:
-                    with open(self.path) as f:
-                        self.send_response(200)
-                        self.send_header("Content-type", mime_type)
-                        self.end_headers()
-                        self.wfile.write(f.read().encode("utf-8"))
-                        f.close()
+            # Open the static file requested and send it
+            try:
+                #with open(os.curdir + os.sep + self.path) as f:
+                with open(os.curdir + os.sep + self.path) as f:
+                    self.send_response(200)
+                    self.send_header("Content-type", mime_type)
+                    self.end_headers()
+                    self.wfile.write(f.read().encode("utf-8"))
+                    f.close()
+            except IOError:
+                self.send_error(404, "File Not Found: {}".format(self.path))
 
-                except IOError:
-                    self.send_error(404, "File Not Found: {}".format(self.path))
-            return
-        except Exception:
-            logging.exception()
+        except Exception as e:
+            self.send_error(200, "Request Failed. I'm a teapot!  ------{}-----".format(e))
+            logging.exception("Handling GET request produced exception:")
 
     def do_POST(self):
         try:
@@ -76,8 +74,8 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
                 raise ValueError("Unexpected POST path: '{}'.".format(self.path))
 
         except Exception as e:
-            print(e)
-            self.send_error(418, "Upload failed - I'm a teapot")
+            self.send_error(200, "Request Failed. I'm a teapot!  ------{}-----".format(e))
+            logging.exception("Handling POST request produced exception:")
     
     def handle_file_upload(self):
         ctype, pdict = cgi.parse_header(self.headers["content-type"])
@@ -121,7 +119,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
             )
         )
         mode = form.getfirst("mode")
-        print(mode)
+        MyHTTPRequestHandler.game_controller.set_game_mode(GameController.Mode[mode])
 
         self.send_response(200)
         self.send_header("Content-type", "text/html")

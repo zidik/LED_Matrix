@@ -23,6 +23,7 @@ import logging
 
 from GUI_app import GUIapp
 from matrix_controller import MatrixController
+from game_controller import GameController
 from webserver import MatrixWebserver
 
 
@@ -30,21 +31,25 @@ app = None
 
 def main():
     global app
-    logging.basicConfig(format='[%(asctime)s] [%(threadName)12s] %(levelname)7s: %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format='[%(asctime)s] [%(threadName)13s] %(levelname)7s: %(message)s', level=logging.DEBUG)
 
     logging.info("Starting up...")
 
     matrix_controller = MatrixController(serial_ports, update_gui)
 
+    game_controller = GameController(matrix_controller)
+
     #Webserver
-    webserver = MatrixWebserver(matrix_controller, address="localhost", port=80)
+    webserver = MatrixWebserver(game_controller, address="localhost", port=80)
     webserver.start()
 
     #GUI
     root = tkinter.Tk()
     root.geometry("300x750+50+50")
     root.title("LED control panel")
-    app = GUIapp(root, matrix_controller)
+    app = GUIapp(root, game_controller)
+
+    game_controller.set_game_mode(GameController.Mode.pong)
 
     logging.debug("Entering tkinter mainloop")
     root.mainloop()

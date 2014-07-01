@@ -1,28 +1,21 @@
 __author__ = 'Mark Laane'
 
 import tkinter
-from enum import Enum
+
 import time
 
 import PIL.Image
 import PIL.ImageTk
 
 from fpsManager import FpsManager
-from board_bus import BoardBus
-from breaker import Breaker
-from pong import Pong
-from test_pattern import TestPattern
+from game_controller import GameController
 
 
 class GUIapp:
-    class Mode(Enum):
-        test = 0
-        pong = 1
-        breaker = 2
+    def __init__(self, master, game_controller):
+        self.game_controller = game_controller
+        self.matrix_controller = self.game_controller.matrix_controller
 
-    def __init__(self, master, matrix_controller):
-        self.mode = GUIapp.Mode.pong
-        self.matrix_controller = matrix_controller
         self.canvas_dims = 300, 300
 
         self.master = master
@@ -53,21 +46,15 @@ class GUIapp:
         self.sensor_fps_var = tkinter.StringVar()
         tkinter.Label(self.frame, textvariable=self.sensor_fps_var).pack()
 
-        self.start_game()
+        self.game_controller.call_on_game_change(self.assign_keys)
         # Start refreshing GUI
         self.master.after(0, self._refresh_gui)
 
-    def start_game(self):
-        if self.mode == GUIapp.Mode.test:
-            self.matrix_controller.game = TestPattern(
-                self.matrix_controller.surface_dims, BoardBus.board_assignment, self.matrix_controller.board_buses
-            )
-        elif self.mode == GUIapp.Mode.pong:
-            self.matrix_controller.game = Pong(self.matrix_controller.surface_dims)
-            self.assign_pong_keys_to_boardbuttons(self.matrix_controller.game)
-        elif self.mode == GUIapp.Mode.breaker:
-            self.matrix_controller.game = Breaker(self.matrix_controller.surface_dims)
-            self.assign_breaker_keys_to_boardbuttons(self.matrix_controller.game)
+    def assign_keys(self, mode, game):
+        if mode == GameController.Mode.pong:
+            self.assign_pong_keys_to_boardbuttons(game)
+        if mode == GameController.Mode.breaker:
+            self.assign_breaker_keys_to_boardbuttons(game)
 
     def update(self):
         self._data_updated = True
@@ -105,15 +92,13 @@ class GUIapp:
     def update_bus_fps(self):
         fps_string = ""
         for bus in self.matrix_controller.board_buses:
-            assert isinstance(bus, BoardBus)
-            fps_string += "{0} {LED update.current_fps} {Sensor poll.current_fps} {Sensor response.current_fps}\n".format(
-                bus.serial_connection.name, **bus.fps)
+            fps_string += "{0} {LED update.current_fps} {Sensor poll.current_fps}\
+             {Sensor response.current_fps}\n".format(bus.serial_connection.name, **bus.fps)
         self.bus_fps_var.set(fps_string)
 
     def update_sensor_fps(self):
         fps_string = ""
         for bus in self.matrix_controller.board_buses:
-            assert isinstance(bus, BoardBus)
             for board in bus.boards:
                 fps_string += "id={id} sensor={sensor}\n".format(id=board.id, sensor=board.sensor_value)
         self.sensor_fps_var.set(fps_string)
