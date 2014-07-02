@@ -8,7 +8,8 @@ import cairo
 
 import game
 from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call,\
-    collide_ball_to_paddle, collide_ball_to_left_wall, collide_ball_to_right_wall, collide_ball_to_top_wall
+    collide_ball_to_paddle, collide_ball_to_left_wall, collide_ball_to_right_wall, collide_ball_to_top_wall,\
+    are_colliding_rect_rect
 
 
 class Breaker(game.Game):
@@ -33,6 +34,14 @@ class Breaker(game.Game):
         collide_ball_to_left_wall(self.ball)
         collide_ball_to_right_wall(self.ball, self.field_dims[0])
         collide_ball_to_top_wall(self.ball)
+
+        self.collide_ball_to_bricks()
+
+    def collide_ball_to_bricks(self):
+        for brick in self.bricks:
+            if not brick.broken:
+                if are_colliding_rect_rect(self.ball, brick):
+                    brick.broken = True
 
     def test_ball_outside(self):
         pixels_out = 1

@@ -125,7 +125,7 @@ class Ball(CircleBoardElement):
     def __init__(self, center_x, center_y, speed, heading, pattern=cairo.SolidPattern(255, 0, 0), radius=1.5):
         super().__init__(center_x, center_y, radius)
         self.speed = speed
-        self.heading = heading
+        self._heading = heading
         self.pattern = pattern
         # self.max_heading = *math.pi #maximum heading deviation from straight up/down motion
 
@@ -147,8 +147,13 @@ class Ball(CircleBoardElement):
         self.speed = (y_speed ** 2 + self.speed_x ** 2) ** 0.5
         self.heading = math.atan2(y_speed, self.speed_x)
 
-    def modify_heading(self, delta):
-        self.heading += delta
+    @property
+    def heading(self):
+        return self._heading
+
+    @heading.setter
+    def heading(self, value):
+        self._heading = value
         # clamp(self.heading, self.max_heading, max_n)
 
     def step(self):
@@ -234,23 +239,21 @@ def collide_ball_to_paddle(ball, paddle):
     assert(isinstance(paddle, Paddle))
     assert(isinstance(ball, Ball))
     heading_delta = 0.1  # change of heading of the ball on hitting edges of the paddle
-    is_past_paddle = (paddle.flipped and ball.top < paddle.bottom) or (not paddle.flipped and ball.bottom > paddle.top)
-    if is_past_paddle:
-        if paddle.left <= ball.center_x <= paddle.right:
-            #put ball back on the board
-            if paddle.flipped:
-                ball.top = paddle.bottom
-            else:
-                ball.bottom = paddle.top
+    if are_colliding_rect_rect(ball, paddle):
+        #put ball back on the board
+        if paddle.flipped:
+            ball.top = paddle.bottom
+        else:
+            ball.bottom = paddle.top
 
-            direction = 1 if paddle.flipped else -1
-            ball.speed_y = (direction * abs(ball.speed_y))
+        direction = 1 if paddle.flipped else -1
+        ball.speed_y = (direction * abs(ball.speed_y))
 
-            if paddle.left <= ball.center_x <= (paddle.left + paddle.width / 4):
-                ball.modify_heading(direction * heading_delta)
+        if ball.center_x < (paddle.left + paddle.width / 4):
+            ball.heading += direction * heading_delta
 
-            elif (paddle.right - paddle.width / 4) <= ball.center_x <= paddle.right:
-                ball.modify_heading(direction * -heading_delta)
+        elif (paddle.right - paddle.width / 4) < ball.center_x:
+            ball.heading += direction * -heading_delta
 
 
 def collide_ball_to_left_wall(ball):
@@ -269,4 +272,14 @@ def collide_ball_to_top_wall(ball):
     if ball.top <= 0 :
         ball.speed_y = abs(ball.speed_y)
         ball.top = 0 - ball.top
+
+
+def are_colliding_rect_rect(elem1, elem2):
+    return not(
+        elem1.bottom < elem2.top or
+        elem1.top > elem2.bottom or
+        elem1.left > elem2.right or
+        elem1.right < elem2.left
+    )
+
 
