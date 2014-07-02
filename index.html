@@ -1,28 +1,30 @@
 <html>
 <head>
-	<title> test </title>
+    <title> test </title>
     <script src="ajax.js"></script>
 </head>
 <body>
-	<p> Interactive Floor </p>
-	<form action="control" method="post">
-		<label for="mode">Mode:</label>
-		<select name="mode" onchange="ajaxPOST('control','application/x-www-form-urlencoded','mode='+this.value)">
-			<option value="nothing" selected>Off</option>
-			<option value="pong">Pong</option>
-			<option value="breaker">Brick breaker</option>
-			<option value="animation">Animation</option>
-			<option value="logo">Logo</option>
-		</select>
-		<input type="submit" value="Go" id="mode_submit">
-	</form>
-	<form action="file_upload" method="post" enctype="multipart/form-data">
-		<label for="file">Filename:</label>
-		<input type="file" name="uploaded_file" accept=".png"><br>
-		<input type="submit" value="Submit">
-	</form>
-    <div id="server_response">
+<p> Interactive Floor </p>
 
-    </div>
+<form action="control" method="post">
+    <label for="mode_select">Mode:</label>
+    <select name="mode" id="mode_select"
+            onchange="ajaxPOST('control','application/x-www-form-urlencoded','mode='+this.value)">
+        <option value="nothing" selected>Off</option>
+        <option value="pong">Pong</option>
+        <option value="breaker">Brick breaker</option>
+        <option value="animation">Animation</option>
+        <option value="logo">Logo</option>
+    </select>
+    <input type="submit" value="Go" id="mode_submit">
+</form>
+<form action="file_upload" method="post" enctype="multipart/form-data">
+    <label for="file_upload">Filename:</label>
+    <input type="file" name="uploaded_file" id="file_upload" accept=".png"><br>
+    <input type="submit" value="Submit">
+</form>
+<div id="server_response">
+
+</div>
 </body>
 </html>
