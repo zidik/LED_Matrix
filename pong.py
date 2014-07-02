@@ -17,7 +17,7 @@ class Pong(game.Game):
         self.p2 = Player()
 
         self.p1_paddle = Paddle(0, self.field_dims[1] - 4)  # Paddle on the bottom
-        self.p2_paddle = Paddle(0, 3, flipped=True)  # Paddle on the top
+        self.p2_paddle = Paddle(0, 0, flipped=True)  # Paddle on the top
 
         self.ball = None
 
@@ -35,18 +35,19 @@ class Pong(game.Game):
         collide_ball_to_paddle(self.ball, self.p2_paddle)
 
         # Ball and wall
-        if self.ball.x <= 0 + self.ball.radius:
+        if self.ball.left <= 0:
             self.ball.set_speed_x(abs(self.ball.get_speed_x()))
-            self.ball.x = -self.ball.x + 2 * self.ball.radius
+            self.ball.left = 0 - self.ball.left
 
-        if self.ball.x >= self.field_dims[0] - 1 - self.ball.radius:
+        if self.ball.right >= self.field_dims[0]:
             self.ball.set_speed_x(-abs(self.ball.get_speed_x()))
-            self.ball.x = 2 * (self.field_dims[0] - 1 - self.ball.radius) - self.ball.x
+            self.ball.right = 2*self.field_dims[0] - self.ball.right
 
     def test_ball_outside(self):
-        if self.ball.y + self.ball.radius + 1 < 0:
+        pixels_out = 1
+        if self.ball.bottom < 0 - pixels_out:
             return self.p2
-        if self.ball.y - self.ball.radius - 1 > self.field_dims[1] - 1:
+        if self.ball.top > (self.field_dims[1] - 1) + pixels_out:
             return self.p1
         return False
 
