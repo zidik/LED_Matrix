@@ -5,7 +5,8 @@ import math
 from threading import Thread
 
 import game
-from game_elements_library import Player, Paddle, Ball, delayed_function_call, collide_ball_to_paddle
+from game_elements_library import Player, Paddle, Ball, delayed_function_call, \
+    collide_ball_to_paddle, collide_ball_to_left_wall, collide_ball_to_right_wall
 
 
 class Pong(game.Game):
@@ -34,14 +35,9 @@ class Pong(game.Game):
         collide_ball_to_paddle(self.ball, self.p1_paddle)
         collide_ball_to_paddle(self.ball, self.p2_paddle)
 
-        # Ball and wall
-        if self.ball.left <= 0:
-            self.ball.set_speed_x(abs(self.ball.get_speed_x()))
-            self.ball.left = 0 - self.ball.left
+        collide_ball_to_left_wall(self.ball)
+        collide_ball_to_right_wall(self.ball, self.field_dims[0])
 
-        if self.ball.right >= self.field_dims[0]:
-            self.ball.set_speed_x(-abs(self.ball.get_speed_x()))
-            self.ball.right = 2*self.field_dims[0] - self.ball.right
 
     def test_ball_outside(self):
         pixels_out = 1

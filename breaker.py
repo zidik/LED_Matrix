@@ -7,7 +7,8 @@ from threading import Thread
 import cairo
 
 import game
-from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call, collide_ball_to_paddle
+from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call,\
+    collide_ball_to_paddle, collide_ball_to_left_wall, collide_ball_to_right_wall, collide_ball_to_top_wall
 
 
 class Breaker(game.Game):
@@ -29,21 +30,13 @@ class Breaker(game.Game):
     def test_ball_collisions(self):
         collide_ball_to_paddle(self.ball, self.paddle)
 
-        # Ball and wall
-        if self.ball.x <= 0 + self.ball.radius:
-            self.ball.set_speed_x(abs(self.ball.get_speed_x()))
-            self.ball.x = -self.ball.x + 2 * self.ball.radius
-
-        if self.ball.x >= self.field_dims[0] - 1 - self.ball.radius:
-            self.ball.set_speed_x(-abs(self.ball.get_speed_x()))
-            self.ball.x = 2 * (self.field_dims[0] - 1 - self.ball.radius) - self.ball.x
-
-        if self.ball.y <= 0 + self.ball.radius:
-            self.ball.set_speed_y(abs(self.ball.get_speed_y()))
-            self.ball.y = -self.ball.y + 2 * self.ball.radius
+        collide_ball_to_left_wall(self.ball)
+        collide_ball_to_right_wall(self.ball, self.field_dims[0])
+        collide_ball_to_top_wall(self.ball)
 
     def test_ball_outside(self):
-        if self.ball.y - self.ball.radius - 1 > self.field_dims[1] - 1:
+        pixels_out = 1
+        if self.ball.top > (self.field_dims[1] - 1) + pixels_out:
             return True
         return False
 
@@ -51,7 +44,7 @@ class Breaker(game.Game):
         speed = 1
         heading = math.pi / 2 + 0.15 * (random.randint(0, 1) * 2 - 1)
 
-        self.ball = Ball(self.paddle.x, self.paddle.y, speed, heading)
+        self.ball = Ball(self.paddle.center_x, self.paddle.center_y, speed, heading)
 
     def reset_bricks(self):
         dims = 6, 4

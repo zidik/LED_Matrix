@@ -49,7 +49,7 @@ def main():
     root.title("LED control panel")
     app = GUIapp(root, game_controller)
 
-    game_controller.set_game_mode(GameController.Mode.pong)
+    game_controller.set_game_mode(GameController.Mode.breaker)
 
     logging.debug("Entering tkinter mainloop")
     root.mainloop()
