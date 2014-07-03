@@ -10,7 +10,7 @@ from game_controller import GameController
 
 
 class MatrixWebserver(threading.Thread):
-    def __init__(self, game_controller, address="localhost", port=8080):
+    def __init__(self, game_controller, address, port):
         super().__init__()
         self.name = "Server thread"
         self.server = HTTPServer((address, port), MyHTTPRequestHandler)

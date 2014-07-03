@@ -43,7 +43,7 @@ def main():
     game_controller = GameController(matrix_controller)
 
     #Webserver
-    webserver = MatrixWebserver(game_controller, address="localhost", port=80)
+    webserver = MatrixWebserver(game_controller, address="localhost", port=8080)
     webserver.start()
 
     if GUI_ENABLED:
