@@ -17,7 +17,7 @@ serial_ports = []
 #Open ports COM2 and COM5
 #serial_ports = [1,4]
 
-GUI_ENABLED = True
+GUI_ENABLED = False
 
 
 import tkinter
@@ -61,8 +61,10 @@ def main():
     else:
         game_controller.set_game_mode(GameController.Mode.breaker)
         try:
-            while True:
-                time.sleep(1000000)
+            run = True
+            while run:
+                if input("Type 'q' to stop.") == "q":
+                    run = False
         except KeyboardInterrupt:
             logging.info("Keyboard interrupt received.")
     logging.info("Stopping...")
