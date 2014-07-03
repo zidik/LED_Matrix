@@ -17,9 +17,12 @@ serial_ports = [2]
 #Open ports COM2 and COM5
 #serial_ports = [1,4]
 
+GUI_ENABLED = False
+
 
 import tkinter
 import logging
+import time
 
 from GUI_app import GUIapp
 from matrix_controller import MatrixController
@@ -43,18 +46,26 @@ def main():
     webserver = MatrixWebserver(game_controller, address="localhost", port=80)
     webserver.start()
 
-    #GUI
-    root = tkinter.Tk()
-    root.geometry("300x750+50+50")
-    root.title("LED control panel")
-    app = GUIapp(root, game_controller)
+    if GUI_ENABLED:
+        #GUI
+        root = tkinter.Tk()
+        root.geometry("300x750+50+50")
+        root.title("LED control panel")
+        app = GUIapp(root, game_controller)
 
-    game_controller.set_game_mode(GameController.Mode.breaker)
+        game_controller.set_game_mode(GameController.Mode.breaker)
 
-    logging.debug("Entering tkinter mainloop")
-    root.mainloop()
-
-    logging.debug("Tkinter mainloop has exited...")
+        logging.debug("Entering tkinter mainloop")
+        root.mainloop()
+        logging.debug("Tkinter mainloop has exited.")
+    else:
+        game_controller.set_game_mode(GameController.Mode.breaker)
+        try:
+            while True:
+                time.sleep(1000000)
+        except KeyboardInterrupt:
+            logging.info("Keyboard interrupt received.")
+    logging.info("Stopping...")
     webserver.join()
     matrix_controller.stop()
     logging.info("Stopped.")
