@@ -17,7 +17,7 @@ serial_ports = []
 #Open ports COM2 and COM5
 #serial_ports = [1,4]
 
-GUI_ENABLED = False
+GUI_ENABLED = True
 
 
 import tkinter

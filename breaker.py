@@ -17,7 +17,7 @@ class Breaker(game.Game):
         self.field_dims = field_dims
         self.player = Player()
         self.paddle = Paddle(0, self.field_dims[1] - 4)  # Paddle on the bottom
-        self.ball = None
+        self.balls = []
         self.bricks = []
         self.reset_game()
 
@@ -26,34 +26,47 @@ class Breaker(game.Game):
         self.paddle.set_position((self.field_dims[0] - 1) / 2)
         self.paddle.set_health(1)
         self.player.reset()
-        self.reset_ball()
+        self.new_ball()
 
-    def test_ball_collisions(self):
-        collide_ball_to_paddle(self.ball, self.paddle)
-
-        collide_ball_to_left_wall(self.ball)
-        collide_ball_to_right_wall(self.ball, self.field_dims[0])
-        collide_ball_to_top_wall(self.ball)
-
-        self.collide_ball_to_bricks()
-
-    def collide_ball_to_bricks(self):
+    def test_ball_collisions(self, ball):
+        collide_ball_to_paddle(ball, self.paddle)
+        collide_ball_to_left_wall(ball)
+        collide_ball_to_right_wall(ball, self.field_dims[0])
+        collide_ball_to_top_wall(ball)
         for brick in self.bricks:
             if not brick.broken:
-                if are_colliding_rect_rect(self.ball, brick):
-                    brick.broken = True
+                self.collide_ball_to_brick(ball, brick)
 
-    def test_ball_outside(self):
+    def collide_ball_to_brick(self, ball, brick):
+        if are_colliding_rect_rect(ball, brick):
+            intersection = brick.intersection(ball)
+            if intersection.width > intersection.height:
+                #bounce from top-or bottom
+                ball.speed_y = math.copysign(
+                    ball.speed_y,
+                    ball.center_y - brick.center_y
+                )
+            else:
+                #bounce from sides
+                ball.speed_x = math.copysign(
+                    ball.speed_x,
+                    ball.center_x - brick.center_x
+                )
+
+            brick.broken = True
+            probability = 0.1
+            if random.random() < probability:
+                self.new_ball(ball.speed) # add a ball with same speed
+
+    def is_ball_outside(self, ball):
         pixels_out = 1
-        if self.ball.top > (self.field_dims[1] - 1) + pixels_out:
+        if ball.top > (self.field_dims[1] - 1) + pixels_out:
             return True
         return False
 
-    def reset_ball(self):
-        speed = 1
+    def new_ball(self, speed=1):
         heading = math.pi / 2 + 0.15 * (random.randint(0, 1) * 2 - 1)
-
-        self.ball = Ball(self.paddle.center_x, self.paddle.center_y, speed, heading)
+        self.balls.append(Ball(self.paddle.center_x, self.paddle.center_y, speed, heading))
 
     def reset_bricks(self):
         dims = 6, 4
@@ -75,26 +88,38 @@ class Breaker(game.Game):
         self.paddle.step()
         self.paddle.limit(self.field_dims[1] - 1)
 
-        if self.ball is not None:
-            self.ball.step()
-            self.test_ball_collisions()
+        for ball in self.balls:
+            ball.step()
+            self.test_ball_collisions(ball)
 
-            if self.test_ball_outside():
+            if self.is_ball_outside(ball):
+                self.balls.remove(ball)
+
+            if len(self.balls) == 0:
                 self.player.lose_hp()
                 self.paddle.set_health(self.player.hp / self.player.max_hp)
                 if self.player.state == Player.State.alive:
-                    self.ball = None
-                    thread = Thread(target=delayed_function_call, args=(1, self.reset_ball))
-                    thread.start()
+                    Thread(target=delayed_function_call, args=(1, self.new_ball)).start()
                 else:
-                    self.ball = None
-                    thread = Thread(target=delayed_function_call, args=(5, self.reset_game))
-                    thread.start()
+                    Thread(target=delayed_function_call, args=(5, self.reset_game)).start()
+
+        if self.all_bricks_broken():
+            pass
+            #TODO:
+            #Thread(target=delayed_function_call, args=(1, self.reset_game)).start()
 
     def draw(self, ctx):
-        if self.ball is not None:
-            self.ball.draw(ctx)
+        for ball in self.balls:
+            ball.draw(ctx)
+
         self.paddle.draw(ctx)
         for brick in self.bricks:
             brick.draw(ctx)
+
+    def all_bricks_broken(self):
+        for brick in self.bricks:
+            if not brick.broken:
+                return False
+        else:
+            return True
 

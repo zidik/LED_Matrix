@@ -28,7 +28,7 @@ class Player:
             self.state = Player.State.dead
 
 
-class RectangleBoardElement():
+class Rectangle():
     def __init__(self, left, top, width, height):
         self.left = left
         self.top = top
@@ -67,8 +67,17 @@ class RectangleBoardElement():
     def center_y(self, value):
         self.top = value - self.height / 2
 
+    def intersection(self, other):
+        left = max(self.left, other.left)
+        right = min(self.right, other.right)
+        bottom = min(self.bottom, other.bottom)
+        top = max(self.top, other.top)
+        width = right - left
+        height = bottom - top
+        return Rectangle(None, None, width, height)
 
-class CircleBoardElement():
+
+class Circle():
     def __init__(self, center_x, center_y, radius):
         self.center_x = center_x
         self.center_y = center_y
@@ -107,7 +116,7 @@ class CircleBoardElement():
         self.center_y = value - self.radius
 
 
-class Brick(RectangleBoardElement):
+class Brick(Rectangle):
     def __init__(self, x, y, width, height, pattern):
         super().__init__(x, y, width, height)
         self.pattern = pattern
@@ -121,7 +130,7 @@ class Brick(RectangleBoardElement):
             ctx.stroke()
 
 
-class Ball(CircleBoardElement):
+class Ball(Circle):
     def __init__(self, center_x, center_y, speed, heading, pattern=cairo.SolidPattern(255, 0, 0), radius=1.5):
         super().__init__(center_x, center_y, radius)
         self.speed = speed
@@ -169,7 +178,7 @@ class Ball(CircleBoardElement):
         cairo_context.stroke()
 
 
-class Paddle(RectangleBoardElement):
+class Paddle(Rectangle):
     def __init__(self, left, top, width=24, height=4, speed=1, flipped=False):
         super().__init__(left, top, width, height)
         self.speed = speed
@@ -269,7 +278,7 @@ def collide_ball_to_right_wall(ball, limit):
 
 
 def collide_ball_to_top_wall(ball):
-    if ball.top <= 0 :
+    if ball.top <= 0:
         ball.speed_y = abs(ball.speed_y)
         ball.top = 0 - ball.top
 
@@ -281,5 +290,3 @@ def are_colliding_rect_rect(elem1, elem2):
         elem1.left > elem2.right or
         elem1.right < elem2.left
     )
-
-
