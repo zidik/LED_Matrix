@@ -12,12 +12,12 @@ __author__ = 'Mark Laane'
 #  "4" will open COM5, etc
 
 # Open port COM6
-serial_ports = [2]
+serial_ports = []
 
 #Open ports COM2 and COM5
 #serial_ports = [1,4]
 
-GUI_ENABLED = False
+GUI_ENABLED = True
 
 
 import tkinter

@@ -4,8 +4,8 @@ import tkinter
 
 import time
 
-import PIL.Image
-import PIL.ImageTk
+from PIL import Image
+from PIL import ImageTk
 
 from fpsManager import FpsManager
 from game_controller import GameController
@@ -67,9 +67,9 @@ class GUIapp:
         if self._data_updated:
             self._data_updated = False
             # Create image from numpy array
-            im = PIL.Image.fromarray(self.matrix_controller.displayed_data)
+            im = Image.fromarray(self.matrix_controller.displayed_data)
             im = im.resize((self.canvas_dims[0], self.canvas_dims[1]))
-            self.photo = PIL.ImageTk.PhotoImage(image=im)
+            self.photo = ImageTk.PhotoImage(image=im)
             self.canvas.create_image(0, 0, image=self.photo, anchor=tkinter.NW)
 
             self.gui_fps.cycle_complete()
