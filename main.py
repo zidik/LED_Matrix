@@ -22,7 +22,6 @@ GUI_ENABLED = True
 
 import tkinter
 import logging
-import time
 
 from GUI_app import GUIapp
 from matrix_controller import MatrixController
