@@ -61,8 +61,8 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.send_error(404, "File Not Found: {}".format(self.path))
 
         except Exception as e:
-            self.send_error(200, "Request Failed. I'm a teapot!  ------{}-----".format(e))
-            logging.exception("Handling GET request produced exception:")
+            self.send_error(200, "Request Failed. ------{}-----".format(e))
+            logging.exception("Handling GET request produced exception.")
 
     def do_POST(self):
         try:
@@ -74,8 +74,8 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
                 raise ValueError("Unexpected POST path: '{}'.".format(self.path))
 
         except Exception as e:
-            self.send_error(200, "Request Failed. I'm a teapot!  ------{}-----".format(e))
-            logging.exception("Handling POST request produced exception:")
+            self.send_error(200, "Request Failed. ------{}-----".format(e))
+            logging.exception("Handling POST request produced exception.")
 
     def handle_file_upload(self):
         ctype, pdict = cgi.parse_header(self.headers["content-type"])
