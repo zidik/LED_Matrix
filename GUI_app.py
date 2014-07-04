@@ -1,7 +1,6 @@
 __author__ = 'Mark Laane'
 
 import tkinter
-
 import time
 
 from PIL import Image
@@ -83,7 +82,7 @@ class GUIapp:
         if sleep_time <= 0:
             sleep_time = 1  # sleep at least a little
 
-        #Loop
+        # Loop
         self.master.after(sleep_time, self._refresh_gui)
 
     def update_gui_fps(self):

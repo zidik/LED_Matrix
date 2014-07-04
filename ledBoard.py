@@ -10,6 +10,7 @@ class Board:
     """
     This class describes all properties and functions of one LED board.
     """
+
     class Command(Enum):
         """ All command-codes sent over serial """
         # From Board to Master

@@ -4,7 +4,7 @@ from enum import Enum
 import time
 import math
 
-#"Cairocffi" could be also installed as "cairo"
+# "Cairocffi" could be also installed as "cairo"
 try:
     import cairocffi as cairo
 except ImportError:
@@ -249,8 +249,8 @@ def delayed_function_call(delay, function, args=None):
 
 
 def collide_ball_to_paddle(ball, paddle):
-    assert(isinstance(paddle, Paddle))
-    assert(isinstance(ball, Ball))
+    assert (isinstance(paddle, Paddle))
+    assert (isinstance(ball, Ball))
     heading_delta = 0.1  # change of heading of the ball on hitting edges of the paddle
     if are_colliding_rect_rect(ball, paddle):
         #put ball back on the board
@@ -278,7 +278,7 @@ def collide_ball_to_left_wall(ball):
 def collide_ball_to_right_wall(ball, limit):
     if ball.right >= limit:
         ball.speed_x = -abs(ball.speed_x)
-        ball.right = 2*limit - ball.right
+        ball.right = 2 * limit - ball.right
 
 
 def collide_ball_to_top_wall(ball):
@@ -288,7 +288,7 @@ def collide_ball_to_top_wall(ball):
 
 
 def are_colliding_rect_rect(elem1, elem2):
-    return not(
+    return not (
         elem1.bottom < elem2.top or
         elem1.top > elem2.bottom or
         elem1.left > elem2.right or

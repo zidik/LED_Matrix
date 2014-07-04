@@ -4,15 +4,15 @@ import math
 import random
 from threading import Thread
 
-#"Cairocffi" could be also installed as "cairo"
+# "Cairocffi" could be also installed as "cairo"
 try:
     import cairocffi as cairo
 except ImportError:
     import cairo
 
 import game
-from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call,\
-    collide_ball_to_paddle, collide_ball_to_left_wall, collide_ball_to_right_wall, collide_ball_to_top_wall,\
+from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call, \
+    collide_ball_to_paddle, collide_ball_to_left_wall, collide_ball_to_right_wall, collide_ball_to_top_wall, \
     are_colliding_rect_rect
 
 
@@ -60,7 +60,7 @@ class Breaker(game.Game):
             brick.broken = True
             probability = 0.1
             if random.random() < probability:
-                self.new_ball(ball.speed) # add a ball with same speed
+                self.new_ball(ball.speed)  # add a ball with same speed
 
     def is_ball_outside(self, ball):
         pixels_out = 1

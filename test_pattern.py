@@ -2,7 +2,7 @@ __author__ = 'Mark'
 
 import math
 
-#"Cairocffi" could be also installed as "cairo"
+# "Cairocffi" could be also installed as "cairo"
 try:
     import cairocffi as cairo
 except ImportError:

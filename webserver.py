@@ -20,7 +20,6 @@ class MatrixWebserver(threading.Thread):
         logging.info("Server started.")
         self.server.serve_forever()
 
-
     def join(self, timeout=None):
         self.server.shutdown()
         logging.info("Server stopped.")
@@ -29,6 +28,7 @@ class MatrixWebserver(threading.Thread):
 
 class MyHTTPRequestHandler(BaseHTTPRequestHandler):
     game_controller = None
+
     def do_GET(self):
         try:
             if self.path == "/":
@@ -37,7 +37,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
             if self.path.endswith(".html"):
                 mime_type = 'text/html'
             # if self.path.endswith(".jpg"):
-            #     mime_type = 'image/jpg'
+            # mime_type = 'image/jpg'
             # if self.path.endswith(".gif"):
             #     mime_type = 'image/gif'
             elif self.path.endswith(".js"):
@@ -50,7 +50,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
 
             # Open the static file requested and send it
             try:
-                #with open(os.curdir + os.sep + self.path) as f:
+                # with open(os.curdir + os.sep + self.path) as f:
                 with open(os.curdir + os.sep + self.path) as f:
                     self.send_response(200)
                     self.send_header("Content-type", mime_type)
@@ -76,7 +76,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(200, "Request Failed. I'm a teapot!  ------{}-----".format(e))
             logging.exception("Handling POST request produced exception:")
-    
+
     def handle_file_upload(self):
         ctype, pdict = cgi.parse_header(self.headers["content-type"])
         if ctype == "multipart/form-data":
@@ -97,7 +97,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
             if ext != ".png":
                 raise ValueError("Unexpected extension: '{}'.".format(ext))
 
-            with open("logo"+ext, "wb") as f:
+            with open("logo" + ext, "wb") as f:
                 f.write(file_item.value)
             print("File upload was successful")
 

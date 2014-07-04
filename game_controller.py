@@ -6,6 +6,7 @@ from breaker import Breaker
 from pong import Pong
 from test_pattern import TestPattern
 
+
 class GameController:
     class Mode(Enum):
         nothing = -1
@@ -30,15 +31,15 @@ class GameController:
         elif mode == GameController.Mode.breaker:
             game = Breaker(surface_dims)
         elif mode == GameController.Mode.animation:
-            #TODO: implement
+            # TODO: implement
             return
         elif mode == GameController.Mode.logo:
-            #TODO: implement
+            # TODO: implement
             return
         else:
             raise ValueError("Unknown game mode")
 
-        #notify all of change
+        # notify all of change
         for func in self._call_on_game_change:
             func(mode, game)
 

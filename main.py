@@ -1,7 +1,7 @@
 __author__ = 'Mark Laane'
 
 # Python 3.4.0
-#PySerial 2.7
+# PySerial 2.7
 #Numpy 1.8.1
 #Pillow 2.4.0
 
@@ -19,7 +19,6 @@ serial_ports = []
 
 GUI_ENABLED = True
 
-
 import tkinter
 import logging
 
@@ -30,6 +29,7 @@ from webserver import MatrixWebserver
 
 
 app = None
+
 
 def main():
     global app

@@ -7,7 +7,8 @@ import time
 import serial
 import numpy
 
-#"Cairocffi" could be also installed as "cairo"
+
+# "Cairocffi" could be also installed as "cairo"
 try:
     import cairocffi as cairo
 except ImportError:

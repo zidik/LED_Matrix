@@ -23,7 +23,7 @@ class FpsManager:
             curr_time = time.time()
             # filter out samples older than (curr_time-fps_period)
             self._samples = [cycle for cycle in self._samples if curr_time - cycle < self.fps_period]
-            #find fps
+            # find fps
             self.current_fps = len(self._samples) / self.fps_period
             time.sleep(0.02)
 
