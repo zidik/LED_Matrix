@@ -1,10 +1,12 @@
 __author__ = 'Mark'
 from enum import Enum
+import logging
 
 from board_bus import BoardBus
 from breaker import Breaker
 from pong import Pong
 from test_pattern import TestPattern
+from logo_bounce import LogoBounce
 
 
 class GameController:
@@ -21,6 +23,7 @@ class GameController:
         self._call_on_game_change = list()
 
     def set_game_mode(self, mode):
+        logging.info("Game set to {}".format(mode))
         surface_dims = self.matrix_controller.surface_dims
         if mode == GameController.Mode.nothing:
             game = None
@@ -34,8 +37,8 @@ class GameController:
             # TODO: implement
             return
         elif mode == GameController.Mode.logo:
-            # TODO: implement
-            return
+            with open("logo.png", "rb") as logo_image:
+                game = LogoBounce(surface_dims, logo_image)
         else:
             raise ValueError("Unknown game mode")
 

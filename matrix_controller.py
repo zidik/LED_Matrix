@@ -82,7 +82,7 @@ class MatrixController:
         logging.debug("Matrix controller stopped")
 
     def update_data(self):
-        fps = 30
+        fps = 25
 
         next_update = time.time()
 
@@ -123,7 +123,7 @@ class MatrixController:
         logging.debug("Thread \"{}\" stopped".format(threading.current_thread().name))
 
     def refresh_sensor_data(self):
-        fps = 30
+        fps = 25
         next_update = time.time()
 
         while not self._stop.isSet() and fps != 0:

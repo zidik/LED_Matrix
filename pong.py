@@ -6,7 +6,7 @@ from threading import Thread
 
 import game
 from game_elements_library import Player, Paddle, Ball, delayed_function_call, \
-    collide_ball_to_paddle, collide_ball_to_left_wall, collide_ball_to_right_wall
+    collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall
 
 
 class Pong(game.Game):
@@ -35,8 +35,8 @@ class Pong(game.Game):
         collide_ball_to_paddle(self.ball, self.p1_paddle)
         collide_ball_to_paddle(self.ball, self.p2_paddle)
 
-        collide_ball_to_left_wall(self.ball)
-        collide_ball_to_right_wall(self.ball, self.field_dims[0])
+        collide_to_left_wall(self.ball)
+        collide_to_right_wall(self.ball, self.field_dims[0])
 
 
     def test_ball_outside(self):
