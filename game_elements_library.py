@@ -34,6 +34,7 @@ class Player:
 
 class Rectangle():
     def __init__(self, left, top, width, height):
+        super().__init__()
         self.left = left
         self.top = top
         self.width = width
@@ -53,7 +54,7 @@ class Rectangle():
 
     @bottom.setter
     def bottom(self, value):
-        self.bottom = value - self.height
+        self.top = value - self.height
 
     @property
     def center_x(self):
@@ -80,9 +81,9 @@ class Rectangle():
         height = bottom - top
         return Rectangle(None, None, width, height)
 
-
 class Circle():
     def __init__(self, center_x, center_y, radius):
+        super().__init__()
         self.center_x = center_x
         self.center_y = center_y
         self.radius = radius
@@ -134,40 +135,37 @@ class Brick(Rectangle):
             ctx.stroke()
 
 
-class Ball(Circle):
-    def __init__(self, center_x, center_y, speed, heading, pattern=cairo.SolidPattern(255, 0, 0), radius=1.5):
-        super().__init__(center_x, center_y, radius)
-        self.speed = speed
-        self._heading = heading
-        self.pattern = pattern
-        # self.max_heading = *math.pi #maximum heading deviation from straight up/down motion
+class Moving():
+    def __init__(self):
+        self.speed = 0
+        self.heading = 0
 
     @property
     def speed_x(self):
         return self.speed * math.cos(self.heading)
-
-    @property
-    def speed_y(self):
-        return self.speed * math.sin(self.heading)
 
     @speed_x.setter
     def speed_x(self, x_speed):
         self.speed = (x_speed ** 2 + self.speed_y ** 2) ** 0.5
         self.heading = math.atan2(self.speed_y, x_speed)
 
+    @property
+    def speed_y(self):
+        return self.speed * math.sin(self.heading)
+
     @speed_y.setter
     def speed_y(self, y_speed):
         self.speed = (y_speed ** 2 + self.speed_x ** 2) ** 0.5
         self.heading = math.atan2(y_speed, self.speed_x)
 
-    @property
-    def heading(self):
-        return self._heading
 
-    @heading.setter
-    def heading(self, value):
-        self._heading = value
-        # clamp(self.heading, self.max_heading, max_n)
+class Ball(Circle, Moving):
+    def __init__(self, center_x, center_y, speed, heading, pattern=cairo.SolidPattern(255, 0, 0), radius=1.5):
+        super().__init__(center_x, center_y, radius)
+        self.speed = speed
+        self.heading = heading
+        self.pattern = pattern
+        # self.max_heading = *math.pi #maximum heading deviation from straight up/down motion
 
     def step(self):
         # Make ball quicker
@@ -269,22 +267,28 @@ def collide_ball_to_paddle(ball, paddle):
             ball.heading += direction * -heading_delta
 
 
-def collide_ball_to_left_wall(ball):
-    if ball.left <= 0:
-        ball.speed_x = abs(ball.speed_x)
-        ball.left = 0 - ball.left
+def collide_to_left_wall(obj):
+    if obj.left <= 0:
+        obj.speed_x = abs(obj.speed_x)
+        obj.left = 0 - obj.left
 
 
-def collide_ball_to_right_wall(ball, limit):
-    if ball.right >= limit:
-        ball.speed_x = -abs(ball.speed_x)
-        ball.right = 2 * limit - ball.right
+def collide_to_right_wall(obj, limit):
+    if obj.right >= limit:
+        obj.speed_x = -abs(obj.speed_x)
+        obj.right = 2 * limit - obj.right
 
 
-def collide_ball_to_top_wall(ball):
-    if ball.top <= 0:
-        ball.speed_y = abs(ball.speed_y)
-        ball.top = 0 - ball.top
+def collide_to_top_wall(obj):
+    if obj.top <= 0:
+        obj.speed_y = abs(obj.speed_y)
+        obj.top = 0 - obj.top
+
+
+def collide_to_bottom_wall(obj, limit):
+    if obj.bottom >= limit:
+        obj.speed_y = -abs(obj.speed_y)
+        obj.bottom = 2 * limit - obj.bottom
 
 
 def are_colliding_rect_rect(elem1, elem2):
