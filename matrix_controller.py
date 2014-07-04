@@ -6,7 +6,12 @@ import time
 
 import serial
 import numpy
-import cairo
+
+#"Cairocffi" could be also installed as "cairo"
+try:
+    import cairocffi as cairo
+except ImportError:
+    import cairo
 
 from board_bus import BoardBus
 from fpsManager import FpsManager

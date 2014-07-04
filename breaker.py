@@ -4,7 +4,11 @@ import math
 import random
 from threading import Thread
 
-import cairo
+#"Cairocffi" could be also installed as "cairo"
+try:
+    import cairocffi as cairo
+except ImportError:
+    import cairo
 
 import game
 from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call,\
