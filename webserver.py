@@ -68,7 +68,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             if self.path == "/file_upload":
                 self.handle_file_upload()
-            if self.path == "/control":
+            elif self.path == "/control":
                 self.handle_mode_change()
             else:
                 raise ValueError("Unexpected POST path: '{}'.".format(self.path))
