@@ -16,6 +16,7 @@ except ImportError:
 
 from board_bus import BoardBus
 from fpsManager import FpsManager
+from timer import Timer
 
 
 class MatrixController:
@@ -85,40 +86,59 @@ class MatrixController:
         fps = 25
 
         next_update = time.time()
-
+        loopcount = 0
+        t0, t1, t2, t3 = None, None, None, None
         while not self._stop.isSet() and fps != 0:
+            with Timer() as t0:
+                # Poll buttons -> this will call associated functions when buttons are pressed.
+                for button in self.buttons:
+                    assert isinstance(button, BoardButton)
+                    button.poll()
 
-            # Poll buttons -> this will call associated functions when buttons are pressed.
-            for button in self.buttons:
-                assert isinstance(button, BoardButton)
-                button.poll()
+                # # UPDATE
+                if self.game is not None:
 
-            # # UPDATE
-            if self.game is not None:
-                self.game.step()
-                self.game.draw(self.context)
+                    with Timer() as t1:
+                        self.game.step()
+                    with Timer() as t2:
+                        self.game.draw(self.context)
 
-                # Get data from surface and convert it to numpy array
-                buf = self.surface.get_data()
-                a = numpy.frombuffer(buf, numpy.uint8)
-                a.shape = (self.surface_dims[0], self.surface_dims[1], 4)
-                # Strip Alpha values and copy to our main numpy array
-                numpy.copyto(self.displayed_data, a[:, :, :3])
+                    with Timer() as t3:
+                        # Get data from surface and convert it to numpy array
+                        buf = self.surface.get_data()
+                        a = numpy.frombuffer(buf, numpy.uint8)
+                        a.shape = (self.surface_dims[0], self.surface_dims[1], 4)
+                        # Strip Alpha values and copy to our main numpy array
+                        numpy.copyto(self.displayed_data, a[:, :, :3])
 
-                self.context.set_source_rgb(0, 0, 0)
-                self.context.paint()
+                    self.context.set_source_rgb(0, 0, 0)
+                    self.context.paint()
 
-            ##UPDATE END
+                ##UPDATE END
 
-            self.signal_update_boards()
-            if self.data_update_callback is not None:
-                self.data_update_callback()  # signal caller (GUI for example)
-            self.fps["Game"].cycle_complete()
+                self.signal_update_boards()
+                if self.data_update_callback is not None:
+                    self.data_update_callback()  # signal caller (GUI for example)
+                self.fps["Game"].cycle_complete()
 
-            next_update += 1.0 / fps
-            sleep_time = next_update - time.time()
-            if sleep_time > 0:
-                self._stop.wait(sleep_time)
+                next_update += 1.0 / fps
+                sleep_time = next_update - time.time()
+                if sleep_time > 0:
+                    self._stop.wait(sleep_time)
+
+            # Timing info
+            loopcount += 1
+            if loopcount > 10*fps:
+                loopcount = 0
+                logging.debug(
+                    "update total: {:.3f} step: {:.3f}ms, draw: {:.3f}ms, convert: {:.3f}ms".format(
+                        t0.milliseconds,
+                        t1.milliseconds,
+                        t2.milliseconds,
+                        t3.milliseconds
+                    )
+                )
+
 
         logging.debug("Thread \"{}\" stopped".format(threading.current_thread().name))
 
