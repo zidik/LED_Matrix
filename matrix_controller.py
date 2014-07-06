@@ -125,6 +125,8 @@ class MatrixController:
                 sleep_time = next_update - time.time()
                 if sleep_time > 0:
                     self._stop.wait(sleep_time)
+                else:
+                    logging.debug("Data update took too long - fps too high?")
 
             # Timing info
             loopcount += 1
