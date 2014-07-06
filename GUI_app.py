@@ -125,16 +125,16 @@ class GUIapp:
         ]
         for i in range(int(len(override_keys) / 2)):
             self.matrix_controller.add_button(
-                board_id=128 + i,
-                function=pong_game.p2_paddle.set_target_position,
-                args=[10 / 2 + 10 * i],
-                override_key=override_keys[i]
+                board_id=128 + 90 + i,
+                function=pong_game.button_pressed,
+                args=[1, i],
+                override_key=override_keys[10 + i]
             )
             self.matrix_controller.add_button(
-                128 + 100 - 1 - i,
-                pong_game.p1_paddle.set_target_position,
-                [10 / 2 + 10 * (9 - i)],
-                override_keys[20 - 1 - i]
+                board_id=128 + i,
+                function=pong_game.button_pressed,
+                args=[2, i],
+                override_key=override_keys[i]
             )
 
     def assign_breaker_keys_to_boardbuttons(self, breaker_game):
