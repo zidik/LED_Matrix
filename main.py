@@ -17,18 +17,32 @@ serial_ports = []
 #Open ports COM2 and COM5
 #serial_ports = [1,4]
 
-GUI_ENABLED = False
+GUI_ENABLED = True
 
 import tkinter
 import logging
+import configparser
 
 from GUI_app import GUIapp
 from matrix_controller import MatrixController
 from game_controller import GameController
 from webserver import MatrixWebserver
 
+#Imported for configuring
+from game_elements_library import Ball,Paddle
+
 
 app = None
+
+
+def update_gui():
+    global app
+    if app is not None:
+        app.update()
+
+
+def color_string_to_list(color_string):
+    return [int(x.strip()) for x in color_string.split(',')]
 
 
 def main():
@@ -36,6 +50,20 @@ def main():
     logging.basicConfig(format='[%(asctime)s] [%(threadName)13s] %(levelname)7s: %(message)s', level=logging.DEBUG)
 
     logging.info("Starting up...")
+
+    logging.debug("Loading configuration...")
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    Ball.configure(
+        stroke_color=color_string_to_list(config["Ball"]["Stroke color"]),
+        fill_color=color_string_to_list(config["Ball"]["Fill color"]),
+        radius=float(config["Ball"]["Radius"])
+    )
+    Paddle.configure(
+        width=float(config["Paddle"]["width"]),
+        height=float(config["Paddle"]["height"])
+    )
+    logging.debug("Configuration loaded.")
 
     matrix_controller = MatrixController(serial_ports, update_gui)
 
@@ -71,11 +99,6 @@ def main():
     matrix_controller.stop()
     logging.info("Stopped.")
 
-
-def update_gui():
-    global app
-    if app is not None:
-        app.update()
 
 
 if __name__ == '__main__':

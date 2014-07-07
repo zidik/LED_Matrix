@@ -82,6 +82,7 @@ class Rectangle():
         height = bottom - top
         return Rectangle(None, None, width, height)
 
+
 class Circle():
     def __init__(self, center_x, center_y, radius):
         super().__init__()
@@ -161,27 +162,51 @@ class Moving():
 
 
 class Ball(Circle, Moving):
-    def __init__(self, center_x, center_y, speed, heading, pattern=cairo.SolidPattern(255, 0, 0), radius=1.5):
-        super().__init__(center_x, center_y, radius)
+    #Default values (prior loading config file)
+    stroke_color = (0, 0, 255, 1)
+    fill_color = (0, 0, 255, 1)
+    radius = 1.5
+
+    @staticmethod
+    def configure(stroke_color, fill_color, radius):
+        Ball.stroke_color = stroke_color
+        Ball.fill_color = fill_color
+        Ball.radius = radius
+
+    def __init__(self, center_x, center_y, speed, heading):
+        super().__init__(center_x, center_y, Ball.radius)
         self.speed = speed
         self.heading = heading
-        self.pattern = pattern
-        # self.max_heading = *math.pi #maximum heading deviation from straight up/down motion
+
+        r, g, b, a = Ball.stroke_color
+        self.stroke_pattern = cairo.SolidPattern(b, g, r, a)
+        r, g, b, a = Ball.fill_color
+        self.fill_pattern = cairo.SolidPattern(b, g, r, a)
 
     def step(self):
         self.center_x += self.speed_x
         self.center_y += self.speed_y
 
     def draw(self, cairo_context):
-        cairo_context.set_line_width(1)
-        cairo_context.set_source(self.pattern)
         cairo_context.arc(self.center_x, self.center_y, self.radius, 0, 2 * math.pi)
+        cairo_context.set_line_width(1)
+        cairo_context.set_source(self.fill_pattern)
+        cairo_context.fill_preserve()
+        cairo_context.set_source(self.stroke_pattern)
         cairo_context.stroke()
 
 
 class Paddle(Rectangle):
-    def __init__(self, left, top, width=24, height=4, speed=1, flipped=False):
-        super().__init__(left, top, width, height)
+    width = 24
+    height = 4
+
+    @staticmethod
+    def configure(width, height):
+        Paddle.width = width
+        Paddle.height = height
+
+    def __init__(self, left, top, speed=1, flipped=False):
+        super().__init__(left, top, Paddle.width, Paddle.height)
         self.speed = speed
         self.flipped = flipped  # flips the paddle up/down
         self.gradient_pos = 0  # position of the gradient line on the paddle
