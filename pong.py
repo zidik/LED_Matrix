@@ -26,6 +26,8 @@ class Pong(game.Game):
         self._p1_paddle = Paddle(0, self._field_dims[1] - 4)  # Paddle on the bottom
         self._p2_paddle = Paddle(0, 0, flipped=True)  # Paddle on the top
 
+        self.ball_speed = 1
+
         self._ball = None
         self._state = None
         self._reset_game()
@@ -57,6 +59,11 @@ class Pong(game.Game):
         if not (self._state == Pong.State.running):
             return
 
+        #Make game quicker
+        self._p1_paddle.speed += 0.001
+        self._p2_paddle.speed += 0.001
+        self.ball_speed += 0.001
+
         self._p1_paddle.step()
         self._p2_paddle.step()
         self._p1_paddle.limit(self._field_dims[1] - 1)
@@ -64,21 +71,25 @@ class Pong(game.Game):
 
         if self._ball is not None:
             self._ball.step()
+            self._ball.speed = self.ball_speed
             self._test_ball_collisions()
 
             loser = self._test_ball_outside()
             if loser:
                 loser.lose_hp()
                 if loser == self._p1:
-                    self._p1_paddle.set_health((self._p1.hp - 1) / (self._p1.max_hp - 1))
+                    self._p1_paddle.set_health(self._p1.hp, self._p1.max_hp)
                 else:
-                    self._p2_paddle.set_health((self._p2.hp - 1) / (self._p2.max_hp - 1))
+                    self._p2_paddle.set_health(self._p2.hp, self._p2.max_hp)
                 if loser.state == Player.State.alive:
                     self._ball = None
+                    #reduce ball speed 1/3'rd
+                    self.ball_speed = self.ball_speed/3*2
                     thread = Thread(target=delayed_function_call, args=(1, self._reset_ball, [loser]))
                     thread.start()
                 else:
                     self._ball = None
+                    self._state = Pong.State.finished
                     thread = Thread(target=delayed_function_call, args=(5, self._reset_game))
                     thread.start()
 
@@ -90,13 +101,14 @@ class Pong(game.Game):
 
     def _reset_game(self):
         self._state = Pong.State.starting_delay
+        self.ball_speed = 1
         self._reset_paddles()
         self._p1.reset()
         self._p2.reset()
         Thread(target=delayed_function_call, args=(2, self._start_waiting)).start()
 
     def _start_waiting(self):
-        self._reset_ball(self._p1)
+        self._reset_ball(random.choice([self._p1, self._p2]))
         self._state = Pong.State.waiting_push
 
 
@@ -119,16 +131,17 @@ class Pong(game.Game):
     def _reset_paddles(self):
         self._p1_paddle.set_position((self._field_dims[0] - 1) / 2)
         self._p2_paddle.set_position((self._field_dims[0] - 1) / 2)
-        self._p1_paddle.set_health(1)
-        self._p2_paddle.set_health(1)
+        self._p1_paddle.speed = 1
+        self._p2_paddle.speed = 1
+        self._p1_paddle.set_health(self._p1.max_hp, self._p1.max_hp)
+        self._p2_paddle.set_health(self._p1.max_hp, self._p1.max_hp)
 
     def _reset_ball(self, loser=None):
-        speed = 1
-        heading = math.pi / 2 + 0.15 * (random.randint(0, 1) * 2 - 1)
+        heading = math.pi / 2 + 0.15 * random.choice([1, -1])
 
         if loser is None or loser == self._p1:
             y_dir = -1
         else:
             y_dir = 1
 
-        self._ball = Ball(self._field_dims[0] / 2, self._field_dims[1] / 2, speed, y_dir * heading)
+        self._ball = Ball(self._field_dims[0] / 2, self._field_dims[1] / 2, self.ball_speed, y_dir * heading)
