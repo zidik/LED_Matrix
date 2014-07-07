@@ -34,8 +34,7 @@ class GameController:
         elif mode == GameController.Mode.breaker:
             game = Breaker(surface_dims)
         elif mode == GameController.Mode.animation:
-            # TODO: implement
-            return
+            raise NotImplementedError("Animation has not jet been implemented")
         elif mode == GameController.Mode.logo:
             with open("logo.png", "rb") as logo_image:
                 game = LogoBounce(surface_dims, logo_image)
