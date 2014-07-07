@@ -3,6 +3,7 @@ __author__ = 'Mark'
 from enum import Enum
 import time
 import math
+from threading import Thread
 
 # "Cairocffi" could be also installed as "cairo"
 try:
@@ -168,8 +169,6 @@ class Ball(Circle, Moving):
         # self.max_heading = *math.pi #maximum heading deviation from straight up/down motion
 
     def step(self):
-        # Make ball quicker
-        self.speed += 0.001
         self.center_x += self.speed_x
         self.center_y += self.speed_y
 
@@ -188,9 +187,46 @@ class Paddle(Rectangle):
         self.gradient_pos = 0  # position of the gradient line on the paddle
         self.target_position = self.center_x  # Paddle will move towards it each step
 
-    def set_health(self, health):
+    def set_health(self, health, max_health, blink=3):
+        """
+        Displays new health value on paddle
+        :param health: new health value
+        :param max_health: maximum health value
+        :param blink: number of blinks to make to show change
+        :raise ValueError: if health is lower than 0 or higher than "max_health"
+        """
+        if health < 0:
+            raise ValueError("Health set less than 0")
+        if health > max_health:
+            raise ValueError("Health set more than maximum")
+
         health = max(0, health)
-        self.gradient_pos = 1 - health
+        self._blink_health(health, max_health, blink_count=blink)
+
+    def _blink_health(self, health, max_health, blink_count=0, show_current=True):
+        """
+        Recursive function that blinks current and last health value on paddle
+        :param health: current health value being shown
+        :param max_health: maximum health value
+        :param blink_count: number ob blinks left
+        :param show_current: True if param "health" is current healt value, otherwise it is previous
+        """
+        blink_period = 0.4
+        if show_current:
+            self.gradient_pos = 1 - (health-1)/(max_health-1)
+            if blink_count <= 0:
+                return
+
+            Thread(
+                target=delayed_function_call,
+                args=(blink_period/2, self._blink_health, [health, max_health, blink_count-1, False])
+            ).start()
+        else:
+            self.gradient_pos = 1 - health/(max_health-1)
+            Thread(
+                target=delayed_function_call,
+                args=(blink_period/2, self._blink_health, [health, max_health, blink_count])
+            ).start()
 
     def set_position(self, position):
         self.set_target_position(position)
@@ -217,9 +253,9 @@ class Paddle(Rectangle):
 
         # Gradient background
         if self.flipped:
-            pat = cairo.LinearGradient(self.right, 0.0, self.left - 1, 0)
+            pat = cairo.LinearGradient(self.right + 1, 0.0, self.left - 1, 0)
         else:
-            pat = cairo.LinearGradient(self.left, 0.0, self.right + 1, 0)
+            pat = cairo.LinearGradient(self.left - 1, 0.0, self.right + 1, 0)
         pat.add_color_stop_rgb(self.gradient_pos, 0, 0, 1)
         pat.add_color_stop_rgb(self.gradient_pos, 0, 1, 0)
         cr.set_source(pat)
