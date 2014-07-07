@@ -148,8 +148,8 @@ class GUIapp:
         ]
         for i in range(len(override_keys)):
             self.matrix_controller.add_button(
-                128 + 100 - 1 - i,
-                breaker_game.paddle.set_target_position,
-                [10 / 2 + 10 * (9 - i)],
-                override_keys[10 - 1 - i]
+                board_id=128 + 90 + i,
+                function=breaker_game.button_pressed,
+                args=[i],
+                override_key=override_keys[i]
             )
