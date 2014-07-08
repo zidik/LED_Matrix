@@ -110,6 +110,7 @@ class MatrixController:
 
                     with Timer() as t3:
                         # Get data from surface and convert it to numpy array
+                        self.surface.flush()
                         buf = self.surface.get_data()
                         a = numpy.frombuffer(buf, numpy.uint8)
                         a.shape = (self.surface_dims[0], self.surface_dims[1], 4)
@@ -135,8 +136,6 @@ class MatrixController:
                 while sleep_time < 0:
                     with Timer() as t5:
                         #SKIP FRAMES!
-                        if skipped_frames == 0:
-                            logging.warning("Data update took too long - skipping frames")
                         if self.game is not None:
                             self.game.step()
                         next_update += update_period
