@@ -7,6 +7,7 @@ from breaker import Breaker
 from pong import Pong
 from test_pattern import TestPattern
 from logo_bounce import LogoBounce
+from animation import Animation
 
 
 class GameController:
@@ -34,7 +35,7 @@ class GameController:
         elif mode == GameController.Mode.breaker:
             game = Breaker(surface_dims)
         elif mode == GameController.Mode.animation:
-            raise NotImplementedError("Animation has not jet been implemented")
+            game = Animation(BoardBus.board_assignment)
         elif mode == GameController.Mode.logo:
             with open("logo.png", "rb") as logo_image:
                 game = LogoBounce(surface_dims, logo_image)

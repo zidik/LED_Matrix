@@ -54,6 +54,8 @@ class GUIapp:
             self.assign_pong_keys_to_boardbuttons(game)
         if mode == GameController.Mode.breaker:
             self.assign_breaker_keys_to_boardbuttons(game)
+        if mode == GameController.Mode.animation:
+            self.assign_animation_keys_to_boardbuttons(game)
 
     def update(self):
         self._data_updated = True
@@ -151,5 +153,17 @@ class GUIapp:
                 board_id=128 + 90 + i,
                 function=breaker_game.button_pressed,
                 args=[i],
+                override_key=override_keys[i]
+            )
+
+    def assign_animation_keys_to_boardbuttons(self, animation_game):
+        override_keys = [
+            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
+        ]
+        for i in range(len(override_keys)):
+            self.matrix_controller.add_button(
+                board_id=128 + 90 + i,
+                function=animation_game.button_pressed,
+                args=[128 + 90 + i],
                 override_key=override_keys[i]
             )
