@@ -87,8 +87,9 @@ class MatrixController:
 
         next_update = time.time()
         loopcount = 0
-        t0, t1, t2, t3, t4 = None, None, None, None, None
+        results = []
         while not self._stop.isSet() and fps != 0:
+            results = 5 * [None]
             no_sleep = False
             with Timer() as t0:
                 # Poll buttons -> this will call associated functions when buttons are pressed.
@@ -101,8 +102,10 @@ class MatrixController:
 
                     with Timer() as t1:
                         self.game.step()
+                    results[1] = t1.milliseconds
                     with Timer() as t2:
                         self.game.draw(self.context)
+                    results[2] = t2.milliseconds
 
                     with Timer() as t3:
                         # Get data from surface and convert it to numpy array
@@ -111,6 +114,7 @@ class MatrixController:
                         a.shape = (self.surface_dims[0], self.surface_dims[1], 4)
                         # Strip Alpha values and copy to our main numpy array
                         numpy.copyto(self.displayed_data, a[:, :, :3])
+                    results[3] = t3.milliseconds
 
                     self.context.set_source_rgb(0, 0, 0)
                     self.context.paint()
@@ -127,21 +131,21 @@ class MatrixController:
                 if sleep_time > 0:
                     with Timer() as t4:
                         self._stop.wait(sleep_time)
+                    results[4] = t4.milliseconds
                 else:
                     no_sleep = True
                     logging.warning("Data update took too long - fps too high?")
+            results[0] = t0.milliseconds
 
             # Timing info
             loopcount += 1
             if loopcount > 10*fps or no_sleep:
                 loopcount = 0
                 logging.debug(
-                    "update total: {:.3f} step: {:.3f}ms, draw: {:.3f}ms, convert: {:.3f}ms, sleep: {:.3f}ms({:.3f})".format(
-                        t0.milliseconds,
-                        t1.milliseconds,
-                        t2.milliseconds,
-                        t3.milliseconds,
-                        t4.milliseconds,
+                    "update total: {0[0]:.3f} step: {0[1]:.3f}ms, "
+                    "draw: {0[2]:.3f}ms, convert: {0[3]:.3f}ms, "
+                    "sleep: {0[4]:.3f}ms({1:.3f})".format(
+                        results,
                         sleep_time*1000
                     )
                 )
