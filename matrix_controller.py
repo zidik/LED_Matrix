@@ -159,7 +159,7 @@ class MatrixController:
                 logging.debug(
                     "update total: {0[0]:.3f} step: {0[1]:.3f}ms, "
                     "draw: {0[2]:.3f}ms, convert: {0[3]:.3f}ms, \n"
-                    "sleep: {0[4]:.3f}ms({1:.3f}) skipped_frames: {3} - {0[5]:.3f}ms".format(
+                    "sleep: {0[4]:.3f}ms({1:.3f}) skipped_frames: {2} - {0[5]:.3f}ms".format(
                         results,
                         sleep_time*1000,
                         skipped_frames
