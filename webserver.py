@@ -74,8 +74,11 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
                 raise ValueError("Unexpected POST path: '{}'.".format(self.path))
 
         except Exception as e:
-            self.send_error(200, "Request Failed. ------{}-----".format(e))
             logging.exception("Handling POST request produced exception.")
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write("{}".format(e).encode("utf-8"))
 
     def handle_file_upload(self):
         ctype, pdict = cgi.parse_header(self.headers["content-type"])
