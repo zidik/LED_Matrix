@@ -84,6 +84,7 @@ class MatrixController:
 
     def update_data(self):
         fps = 25
+        update_period = 1.0/fps
 
         next_update = time.time()
         loopcount = 0
@@ -126,15 +127,26 @@ class MatrixController:
                     self.data_update_callback()  # signal caller (GUI for example)
                 self.fps["Game"].cycle_complete()
 
-                next_update += 1.0 / fps
+
+                next_update += update_period
                 sleep_time = next_update - time.time()
-                if sleep_time > 0:
+
+                while sleep_time < 0:
+                    #SKIP FRAMES!
+                    if not no_sleep:
+                        logging.warning("Data update took too long - skipping frames")
+                    no_sleep = True
+                    if self.game is not None:
+                        self.game.step()
+                    next_update += update_period
+                    sleep_time = next_update - time.time()
+                else:
+                    #Normal execution - sleep time is positive
                     with Timer() as t4:
                         self._stop.wait(sleep_time)
                     results[4] = t4.milliseconds
-                else:
-                    no_sleep = True
-                    logging.warning("Data update took too long - fps too high?")
+
+
             results[0] = t0.milliseconds
 
             # Timing info
