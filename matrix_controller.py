@@ -87,8 +87,9 @@ class MatrixController:
 
         next_update = time.time()
         loopcount = 0
-        t0, t1, t2, t3 = None, None, None, None
+        t0, t1, t2, t3, t4 = None, None, None, None, None
         while not self._stop.isSet() and fps != 0:
+            no_sleep = False
             with Timer() as t0:
                 # Poll buttons -> this will call associated functions when buttons are pressed.
                 for button in self.buttons:
@@ -124,20 +125,24 @@ class MatrixController:
                 next_update += 1.0 / fps
                 sleep_time = next_update - time.time()
                 if sleep_time > 0:
-                    self._stop.wait(sleep_time)
+                    with Timer() as t4:
+                        self._stop.wait(sleep_time)
                 else:
-                    logging.debug("Data update took too long - fps too high?")
+                    no_sleep = True
+                    logging.warning("Data update took too long - fps too high?")
 
             # Timing info
             loopcount += 1
-            if loopcount > 10*fps:
+            if loopcount > 10*fps or no_sleep:
                 loopcount = 0
                 logging.debug(
-                    "update total: {:.3f} step: {:.3f}ms, draw: {:.3f}ms, convert: {:.3f}ms".format(
+                    "update total: {:.3f} step: {:.3f}ms, draw: {:.3f}ms, convert: {:.3f}ms, sleep: {:.3f}ms({:.3f})".format(
                         t0.milliseconds,
                         t1.milliseconds,
                         t2.milliseconds,
-                        t3.milliseconds
+                        t3.milliseconds,
+                        t4.milliseconds,
+                        sleep_time*1000
                     )
                 )
 
