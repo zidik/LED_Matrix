@@ -90,9 +90,9 @@ class MatrixController:
         loopcount = 0
 
         while not self._stop.isSet() and fps != 0:
-            results = 5 * [0]
-            no_sleep = False
+            results = 6 * [0]
             with Timer() as t0:
+
                 # Poll buttons -> this will call associated functions when buttons are pressed.
                 for button in self.buttons:
                     assert isinstance(button, BoardButton)
@@ -131,15 +131,18 @@ class MatrixController:
                 next_update += update_period
                 sleep_time = next_update - time.time()
 
+                skipped_frames = 0
                 while sleep_time < 0:
-                    #SKIP FRAMES!
-                    if not no_sleep:
-                        logging.warning("Data update took too long - skipping frames")
-                    no_sleep = True
-                    if self.game is not None:
-                        self.game.step()
-                    next_update += update_period
-                    sleep_time = next_update - time.time()
+                    with Timer() as t5:
+                        #SKIP FRAMES!
+                        if skipped_frames == 0:
+                            logging.warning("Data update took too long - skipping frames")
+                        if self.game is not None:
+                            self.game.step()
+                        next_update += update_period
+                        sleep_time = next_update - time.time()
+                        skipped_frames += 1
+                    results[5] += t5.milliseconds
                 else:
                     #Normal execution - sleep time is positive
                     with Timer() as t4:
@@ -151,14 +154,15 @@ class MatrixController:
 
             # Timing info
             loopcount += 1
-            if loopcount > 10*fps or no_sleep:
+            if loopcount > 10*fps or skipped_frames > 0:
                 loopcount = 0
                 logging.debug(
                     "update total: {0[0]:.3f} step: {0[1]:.3f}ms, "
-                    "draw: {0[2]:.3f}ms, convert: {0[3]:.3f}ms, "
-                    "sleep: {0[4]:.3f}ms({1:.3f})".format(
+                    "draw: {0[2]:.3f}ms, convert: {0[3]:.3f}ms, \n"
+                    "sleep: {0[4]:.3f}ms({1:.3f}) skipped_frames: {3} - {0[5]:.3f}ms".format(
                         results,
-                        sleep_time*1000
+                        sleep_time*1000,
+                        skipped_frames
                     )
                 )
 
