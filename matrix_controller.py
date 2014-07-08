@@ -87,9 +87,9 @@ class MatrixController:
 
         next_update = time.time()
         loopcount = 0
-        results = []
+
         while not self._stop.isSet() and fps != 0:
-            results = 5 * [None]
+            results = 5 * [0]
             no_sleep = False
             with Timer() as t0:
                 # Poll buttons -> this will call associated functions when buttons are pressed.
