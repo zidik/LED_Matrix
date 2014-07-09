@@ -16,10 +16,14 @@ from webserver import MatrixWebserver
 
 #Imported for configuring
 from game_elements_library import Ball, Paddle
+from catch_colors import Symbol
 
 
 def csv_to_int_list(color_string):
     return [int(x.strip()) for x in color_string.split(',')]
+
+def csv_to_float_list(color_string):
+    return [float(x.strip()) for x in color_string.split(',')]
 
 
 def main():
@@ -27,32 +31,26 @@ def main():
 
     logging.info("Starting up...")
 
+    ### Loading Configuration
     logging.debug("Loading configuration...")
     config = configparser.ConfigParser()
     config.read('config.ini')
     gui_enabled = config["General"].getboolean("GUI")
     serial_ports = csv_to_int_list(config["Matrix"]["Serial ports"])
-    Ball.configure(
-        stroke_color=csv_to_int_list(config["Ball"]["Stroke color"]),
-        fill_color=csv_to_int_list(config["Ball"]["Fill color"]),
-        radius=float(config["Ball"]["Radius"])
-    )
-    Paddle.configure(
-        width=float(config["Paddle"]["width"]),
-        height=float(config["Paddle"]["height"])
-    )
+    configure_other(config)
     logging.debug("Configuration loaded.")
 
+    ### Starting up Matrix
     matrix_controller = MatrixController(serial_ports)
 
     game_controller = GameController(matrix_controller)
 
-    #Webserver
+    ### Starting up Webserver
     webserver = MatrixWebserver(game_controller, address="", port=8000)
     webserver.start()
 
     if gui_enabled:
-        #GUI
+        ### Starting up GUI
         root = tkinter.Tk()
         root.geometry("300x750+50+50")
         root.title("LED control panel")
@@ -63,21 +61,40 @@ def main():
         game_controller.set_game_mode(GameController.Mode.breaker)
 
         logging.debug("Entering tkinter mainloop")
+        ### MAIN LOOP when GUI is enabled
         root.mainloop()
         logging.debug("Tkinter mainloop has exited.")
     else:
         game_controller.set_game_mode(GameController.Mode.breaker)
         try:
+            ### MAIN LOOP when gui is disabled
             run = True
             while run:
                 if input("Type 'q' to stop.") == "q":
                     run = False
         except KeyboardInterrupt:
             logging.info("Keyboard interrupt received.")
+
+    ### STOPPING
     logging.info("Stopping...")
     webserver.join()
     matrix_controller.stop()
     logging.info("Stopped.")
+    ### END
+
+
+def configure_other(config):
+    Ball.stroke_color = csv_to_float_list(config["Ball"]["Stroke color"])
+    Ball.fill_color = csv_to_float_list(config["Ball"]["Fill color"])
+    Ball.radius = float(config["Ball"]["Radius"])
+
+    Paddle.width = float(config["Paddle"]["width"])
+    Paddle.height = float(config["Paddle"]["height"])
+
+    Symbol.color_start = csv_to_float_list(config["Catch Colors"]["Symbol start color"])
+    Symbol.color_end = csv_to_float_list(config["Catch Colors"]["Symbol end color"])
+    Symbol.lifetime = float(config["Catch Colors"]["Symbol lifetime"])
+    Symbol.change_period = float(config["Catch Colors"]["Symbol change period"])
 
 
 

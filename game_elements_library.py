@@ -163,15 +163,9 @@ class Moving():
 
 class Ball(Circle, Moving):
     #Default values (prior loading config file)
-    stroke_color = (0, 0, 255, 1)
-    fill_color = (0, 0, 255, 1)
+    stroke_color = (0, 0, 1, 1)
+    fill_color = (0, 0, 0, 1)
     radius = 1.5
-
-    @staticmethod
-    def configure(stroke_color, fill_color, radius):
-        Ball.stroke_color = stroke_color
-        Ball.fill_color = fill_color
-        Ball.radius = radius
 
     def __init__(self, center_x, center_y, speed, heading):
         super().__init__(center_x, center_y, Ball.radius)
@@ -199,11 +193,6 @@ class Ball(Circle, Moving):
 class Paddle(Rectangle):
     width = 24
     height = 4
-
-    @staticmethod
-    def configure(width, height):
-        Paddle.width = width
-        Paddle.height = height
 
     def __init__(self, left, top, speed=1, flipped=False):
         super().__init__(left, top, Paddle.width, Paddle.height)
