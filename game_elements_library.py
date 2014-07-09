@@ -129,20 +129,12 @@ class Brick(Rectangle):
         self.pattern = pattern
         self.broken = False
 
-        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width, self.height)
-        ctx = cairo.Context(self.surface)
-        ctx.set_line_width(1)
-        ctx.set_source(self.pattern)
-        ctx.rectangle(0.5, 0.5, self.width - 1, self.height - 1)
-        ctx.stroke()
-
     def draw(self, ctx):
         if not self.broken:
-            ctx.save()
-            ctx.translate(self.left, self.top)
-            ctx.set_source_surface(self.surface)
-            ctx.paint()
-            ctx.restore()
+            ctx.set_line_width(1)
+            ctx.set_source(self.pattern)
+            ctx.rectangle(self.left + 0.5, self.top + 0.5, self.width - 1, self.height - 1)
+            ctx.stroke()
 
 
 class Moving():
