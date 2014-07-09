@@ -4,13 +4,6 @@ import math
 import random
 from threading import Thread
 from enum import Enum
-from timer import Timer
-
-# "Cairocffi" could be also installed as "cairo"
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
 
 import game
 from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call, \
@@ -19,6 +12,11 @@ from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_
 
 
 class Breaker(game.Game):
+    brick_colors = [
+        [(1, 1, 1, 1), (1, 1, 1, 1)],
+        [(0.5, 0.5, 0.5, 1), (0.5, 0.5, 0.5, 1)]
+    ]
+
     class State(Enum):
         starting_delay = 0
         waiting_push = 1
@@ -87,19 +85,13 @@ class Breaker(game.Game):
             Thread(target=delayed_function_call, args=(1, self._reset_game)).start()
 
     def draw(self, ctx):
-        with Timer() as tim:
-            for ball in self.balls:
-                ball.draw(ctx)
-        print("Balls:", tim.milliseconds)
+        for ball in self.balls:
+            ball.draw(ctx)
 
-        with Timer() as tim:
-            self.paddle.draw(ctx)
-        print("Paddle:",  tim.milliseconds)
+        self.paddle.draw(ctx)
 
-        with Timer() as tim:
-            for brick in self.bricks:
-                brick.draw(ctx)
-        print("Bricks:", tim.milliseconds)
+        for brick in self.bricks:
+            brick.draw(ctx)
 
     def _reset_game(self):
         self._state = Breaker.State.starting_delay
@@ -162,7 +154,6 @@ class Breaker(game.Game):
         distance_from_top = 15
         dims = 6, 4
         brick_dims = 14, 6
-        patterns = cairo.SolidPattern(0, 0, 255), cairo.SolidPattern(0, 255, 255)
         for y in range(dims[1]):
             for x in range(dims[0]):
                 self.bricks.append(
@@ -171,7 +162,7 @@ class Breaker(game.Game):
                         y=distance_from_top + y * brick_dims[1],
                         width=brick_dims[0],
                         height=brick_dims[1],
-                        pattern=patterns[(x + y) % 2]
+                        colors=Breaker.brick_colors[(x + y) % 2]
                     )
                 )
 
@@ -181,4 +172,3 @@ class Breaker(game.Game):
                 return False
         else:
             return True
-

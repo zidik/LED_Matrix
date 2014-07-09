@@ -17,6 +17,7 @@ from webserver import MatrixWebserver
 #Imported for configuring
 from game_elements_library import Ball, Paddle
 from catch_colors import Symbol
+from breaker import Breaker
 
 
 def csv_to_int_list(color_string):
@@ -90,6 +91,19 @@ def configure_other(config):
 
     Paddle.width = float(config["Paddle"]["width"])
     Paddle.height = float(config["Paddle"]["height"])
+    Paddle.stroke_color = [
+        csv_to_float_list(config["Paddle"]["Stroke color 0"]),
+        csv_to_float_list(config["Paddle"]["Stroke color 1"])
+    ]
+    Paddle.fill_color = [
+        csv_to_float_list(config["Paddle"]["Fill color 0"]),
+        csv_to_float_list(config["Paddle"]["Fill color 1"])
+    ]
+
+    Breaker.brick_colors =[
+        [csv_to_float_list(config["Breaker"]["Stroke color 0"]), csv_to_float_list(config["Breaker"]["Fill color 0"])],
+        [csv_to_float_list(config["Breaker"]["Stroke color 1"]), csv_to_float_list(config["Breaker"]["Fill color 1"])]
+    ]
 
     Symbol.color_start = csv_to_float_list(config["Catch Colors"]["Symbol start color"])
     Symbol.color_end = csv_to_float_list(config["Catch Colors"]["Symbol end color"])

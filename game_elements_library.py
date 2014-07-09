@@ -124,16 +124,22 @@ class Circle():
 
 
 class Brick(Rectangle):
-    def __init__(self, x, y, width, height, pattern):
+    def __init__(self, x, y, width, height, colors):
         super().__init__(x, y, width, height)
-        self.pattern = pattern
+        self.patterns = []
+        r, g, b, a = colors[0]
+        self.patterns.append(cairo.SolidPattern(b, g, r, a))
+        r, g, b, a = colors[1]
+        self.patterns.append(cairo.SolidPattern(b, g, r, a))
         self.broken = False
 
     def draw(self, ctx):
         if not self.broken:
-            ctx.set_line_width(1)
-            ctx.set_source(self.pattern)
             ctx.rectangle(self.left + 0.5, self.top + 0.5, self.width - 1, self.height - 1)
+            ctx.set_source(self.patterns[1])
+            ctx.fill_preserve()
+            ctx.set_source(self.patterns[0])
+            ctx.set_line_width(1)
             ctx.stroke()
 
 
@@ -193,6 +199,9 @@ class Ball(Circle, Moving):
 class Paddle(Rectangle):
     width = 24
     height = 4
+    stroke_color = [(0, 1, 0, 1), (1, 0, 0, 1)]
+    fill_color = [(0, 1, 0, 1), (1, 0, 0, 1)]
+
 
     def __init__(self, left, top, speed=1, flipped=False):
         super().__init__(left, top, Paddle.width, Paddle.height)
@@ -263,17 +272,8 @@ class Paddle(Rectangle):
             self.right = limit + 1
 
     def draw(self, cr):
-        cr.set_line_width(1)
 
-        # Gradient background
-        if self.flipped:
-            pat = cairo.LinearGradient(self.right + 1, 0.0, self.left - 1, 0)
-        else:
-            pat = cairo.LinearGradient(self.left - 1, 0.0, self.right + 1, 0)
-        pat.add_color_stop_rgb(self.gradient_pos, 0, 0, 1)
-        pat.add_color_stop_rgb(self.gradient_pos, 0, 1, 0)
-        cr.set_source(pat)
-
+        #Calculate Path
         y = self.center_y
         r = self.height / 2 - 0.5
         x = self.left + self.height / 2
@@ -281,6 +281,33 @@ class Paddle(Rectangle):
         x = self.right - self.height / 2
         cr.arc(x, y, r, -math.pi / 2, math.pi / 2)
         cr.close_path()
+
+        #Fill
+        # Gradient background
+        if self.flipped:
+            pat = cairo.LinearGradient(self.right + 1, 0.0, self.left - 1, 0)
+        else:
+            pat = cairo.LinearGradient(self.left - 1, 0.0, self.right + 1, 0)
+        r, g, b, a = Paddle.fill_color[1]
+        pat.add_color_stop_rgba(self.gradient_pos, b, g, r, a)
+        r, g, b, a = Paddle.fill_color[0]
+        pat.add_color_stop_rgba(self.gradient_pos, b, g, r, a)
+        cr.set_source(pat)
+
+        cr.fill_preserve()
+
+        #Stroke
+        if self.flipped:
+            pat = cairo.LinearGradient(self.right + 1, 0.0, self.left - 1, 0)
+        else:
+            pat = cairo.LinearGradient(self.left - 1, 0.0, self.right + 1, 0)
+        r, g, b, a = Paddle.stroke_color[1]
+        pat.add_color_stop_rgba(self.gradient_pos, b, g, r, a)
+        r, g, b, a = Paddle.stroke_color[0]
+        pat.add_color_stop_rgba(self.gradient_pos, b, g, r, a)
+        cr.set_source(pat)
+
+        cr.set_line_width(1)
         cr.stroke()
 
 
