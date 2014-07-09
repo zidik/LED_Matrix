@@ -30,19 +30,19 @@ class Animation(game.Game):
         for circle in self.expanding_circles:
             circle.draw(context)
 
-    def button_pressed(self, board_number):
+    def button_pressed(self, board_id):
         """
         Signal the game that the button was pressed.
 
-        :param button_number: number of the board-button pressed.
+        :param board_id: number of the board-button pressed.
         """
 
-        for board_id, x, y in self.board_assignment:
-            if board_id == board_number:
+        for board_id_found, x, y in self.board_assignment:
+            if board_id_found == board_id:
                 self.expanding_circles.append(ExpandingCircle(x * 10 + 5, y * 10 + 5, 60))
                 break
         else:
-            raise ValueError("No board found with id {}".format(board_number))
+            raise ValueError("No board found with id {}".format(board_id))
 
 
 class ExpandingCircle(Circle):
