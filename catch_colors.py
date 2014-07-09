@@ -16,11 +16,13 @@ except ImportError:
 
 
 class CatchColors(game.Game):
+    """
+    One player game where the player has to press the board which has the symbol on it
+    """
 
     def __init__(self, board_assignment):
         self._board_assignment = board_assignment
         self._symbol = None
-
 
     def button_pressed(self, board_id):
         """
@@ -30,8 +32,6 @@ class CatchColors(game.Game):
         """
         if self._symbol.board_id == board_id:
             self._new_symbol()
-        else:
-            raise ValueError("No board found with id {}".format(board_id))
 
     def step(self):
         if self._symbol is None:
@@ -75,7 +75,6 @@ class Symbol(Circle):
         cairo_context.set_line_width(1)
         weight = min(1, self.age/Symbol.change_period)
         r, g, b, a = tuple(sum(map(mul, x, (1-weight, weight))) for x in zip(Symbol.color_start, Symbol.color_end))
-        print(r,g,b,a)
         cairo_context.set_source(cairo.SolidPattern(b, g, r, a))
         cairo_context.fill()
 
