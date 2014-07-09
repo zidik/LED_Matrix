@@ -8,12 +8,14 @@ from PIL import ImageTk
 
 from fpsManager import FpsManager
 from game_controller import GameController
-
+from matrix_controller import MatrixController, BoardButton
 
 class GUIapp:
     def __init__(self, master, game_controller):
+        assert isinstance(game_controller, GameController)
         self.game_controller = game_controller
         self.matrix_controller = self.game_controller.matrix_controller
+        assert isinstance(self.matrix_controller, MatrixController)
 
         self.canvas_dims = 300, 300
 
@@ -45,17 +47,33 @@ class GUIapp:
         self.sensor_fps_var = tkinter.StringVar()
         tkinter.Label(self.frame, textvariable=self.sensor_fps_var).pack()
 
-        self.game_controller.call_on_game_change(self.assign_keys)
+        self.game_controller.connect("game changed", self.assign_keys)
         # Start refreshing GUI
         self.master.after(0, self._refresh_gui)
 
     def assign_keys(self, mode, game):
+        override_keys = []
         if mode == GameController.Mode.pong:
-            self.assign_pong_keys_to_boardbuttons(game)
+            override_keys = [
+                'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+                'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
+            ]
         if mode == GameController.Mode.breaker:
-            self.assign_breaker_keys_to_boardbuttons(game)
-        if mode == GameController.Mode.animation:
-            self.assign_animation_keys_to_boardbuttons(game)
+            override_keys = [
+                'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
+            ]
+        if mode == GameController.Mode.animation or\
+            mode == GameController.Mode.catch_colors:
+            override_keys = [
+                'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+                'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö',
+                'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'
+            ]
+
+        for button in self.matrix_controller.buttons:
+            if len(override_keys) == 0:
+                break
+            button.override_key = override_keys.pop(0)
 
     def update(self):
         self._data_updated = True
@@ -114,56 +132,3 @@ class GUIapp:
         for button in self.matrix_controller.buttons:
             if button.override_key == key:
                 button.set_override(override)
-
-    def assign_pong_keys_to_boardbuttons(self, pong_game):
-        """
-        Populates "buttons" list
-        """
-
-        # keyboard keys - which will be listened to
-        override_keys = [
-            'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
-            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
-        ]
-        for i in range(int(len(override_keys) / 2)):
-            self.matrix_controller.add_button(
-                board_id=128 + 90 + i,
-                function=pong_game.button_pressed,
-                args=[1, i],
-                override_key=override_keys[10 + i]
-            )
-            self.matrix_controller.add_button(
-                board_id=128 + i,
-                function=pong_game.button_pressed,
-                args=[2, i],
-                override_key=override_keys[i]
-            )
-
-    def assign_breaker_keys_to_boardbuttons(self, breaker_game):
-        """
-        Populates "buttons" list
-        """
-
-        # keyboard keys - which will be listened to
-        override_keys = [
-            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
-        ]
-        for i in range(len(override_keys)):
-            self.matrix_controller.add_button(
-                board_id=128 + 90 + i,
-                function=breaker_game.button_pressed,
-                args=[i],
-                override_key=override_keys[i]
-            )
-
-    def assign_animation_keys_to_boardbuttons(self, animation_game):
-        override_keys = [
-            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
-        ]
-        for i in range(len(override_keys)):
-            self.matrix_controller.add_button(
-                board_id=128 + 90 + i,
-                function=animation_game.button_pressed,
-                args=[128 + 90 + i],
-                override_key=override_keys[i]
-            )

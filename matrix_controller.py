@@ -35,22 +35,13 @@ class MatrixController:
         self.context = cairo.Context(self.surface)
         # Numpy array of data displayed on floor and GUI
         #Image from Cairo surface is copied into this buffer every frame
-        self.displayed_data = numpy.zeros((self.surface_dims[0], self.surface_dims[1], 3), dtype=numpy.uint8)
+        self.displayed_data = None
+        
+        self.clear_displayed_data()
 
         self.assign_boards()
 
-        serial_connections = []
-        for port in serial_ports:
-            try:
-                serial_connections.append(serial.Serial(port=port, baudrate=500000, writeTimeout=0))
-            except serial.SerialException:
-                logging.exception("Unable to open serial port")
-
-        # Create all buses
-        for connection in serial_connections:
-            new_bus = BoardBus(connection, self.displayed_data)
-            self.board_buses.append(new_bus)
-            self.threads.append(new_bus)
+        self._create_buses(serial_ports)
 
         # GameLoop - updates data for displaying
         t = threading.Thread(target=self.update_data, name="Game Thread")
@@ -68,6 +59,23 @@ class MatrixController:
         for bus in self.board_buses:
             assert isinstance(bus, BoardBus)
             bus.broadcast_board.ping()
+
+    def clear_displayed_data(self):
+        self.displayed_data = numpy.zeros((self.surface_dims[0], self.surface_dims[1], 3), dtype=numpy.uint8)
+
+    def _create_buses(self, serial_ports):
+        serial_connections = []
+        for port in serial_ports:
+            try:
+                serial_connections.append(serial.Serial(port=port, baudrate=500000, writeTimeout=0))
+            except serial.SerialException:
+                logging.exception("Unable to open serial port")
+
+        # Create all buses
+        for connection in serial_connections:
+            new_bus = BoardBus(connection, self.displayed_data)
+            self.board_buses.append(new_bus)
+            self.threads.append(new_bus)
 
     @staticmethod
     def assign_boards():
@@ -187,7 +195,7 @@ class MatrixController:
         for bus in self.board_buses:
             bus.refresh_leds()
 
-    def add_button(self, board_id, function, args, override_key):
+    def add_button(self, board_id, function, args=None, override_key=None):
         self.buttons.append(
             BoardButton(board_id, self.board_buses, function, args, override_key)
         )
