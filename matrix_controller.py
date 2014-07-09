@@ -20,8 +20,8 @@ from timer import Timer
 
 
 class MatrixController:
-    def __init__(self, serial_ports, data_update_callback=None):
-        self.data_update_callback = data_update_callback
+    def __init__(self, serial_ports):
+        self.data_update_callback = None
         self.game = None
         # TODO - bug here if dims don't match
         self.surface_dims = 100, 100
@@ -191,6 +191,11 @@ class MatrixController:
         self.buttons.append(
             BoardButton(board_id, self.board_buses, function, args, override_key)
         )
+
+    def connect(self, event_name, update_gui):
+        if event_name == "data_update":
+            self.data_update_callback = update_gui
+
 
 
 class BoardButton:

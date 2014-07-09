@@ -5,20 +5,6 @@ __author__ = 'Mark Laane'
 #Numpy 1.8.1
 #Pillow 2.4.0
 
-
-#List of ports to use:
-# NB! In windows:
-#  "3" will open COM4,
-#  "4" will open COM5, etc
-
-# Open port COM6
-serial_ports = []
-
-#Open ports COM2 and COM5
-#serial_ports = [1,4]
-
-GUI_ENABLED = False
-
 import tkinter
 import logging
 import configparser
@@ -29,24 +15,14 @@ from game_controller import GameController
 from webserver import MatrixWebserver
 
 #Imported for configuring
-from game_elements_library import Ball,Paddle
+from game_elements_library import Ball, Paddle
 
 
-app = None
-
-
-def update_gui():
-    global app
-    if app is not None:
-        app.update()
-
-
-def color_string_to_list(color_string):
+def csv_to_int_list(color_string):
     return [int(x.strip()) for x in color_string.split(',')]
 
 
 def main():
-    global app
     logging.basicConfig(format='[%(asctime)s] [%(threadName)13s] %(levelname)7s: %(message)s', level=logging.DEBUG)
 
     logging.info("Starting up...")
@@ -54,9 +30,11 @@ def main():
     logging.debug("Loading configuration...")
     config = configparser.ConfigParser()
     config.read('config.ini')
+    gui_enabled = config["General"].getboolean("GUI")
+    serial_ports = csv_to_int_list(config["Matrix"]["Serial ports"])
     Ball.configure(
-        stroke_color=color_string_to_list(config["Ball"]["Stroke color"]),
-        fill_color=color_string_to_list(config["Ball"]["Fill color"]),
+        stroke_color=csv_to_int_list(config["Ball"]["Stroke color"]),
+        fill_color=csv_to_int_list(config["Ball"]["Fill color"]),
         radius=float(config["Ball"]["Radius"])
     )
     Paddle.configure(
@@ -65,7 +43,7 @@ def main():
     )
     logging.debug("Configuration loaded.")
 
-    matrix_controller = MatrixController(serial_ports, update_gui)
+    matrix_controller = MatrixController(serial_ports)
 
     game_controller = GameController(matrix_controller)
 
@@ -73,12 +51,14 @@ def main():
     webserver = MatrixWebserver(game_controller, address="", port=8000)
     webserver.start()
 
-    if GUI_ENABLED:
+    if gui_enabled:
         #GUI
         root = tkinter.Tk()
         root.geometry("300x750+50+50")
         root.title("LED control panel")
         app = GUIapp(root, game_controller)
+        # Matrix controller will trigger GUI update when data changes
+        matrix_controller.connect("data_update", app.update)
 
         game_controller.set_game_mode(GameController.Mode.breaker)
 
