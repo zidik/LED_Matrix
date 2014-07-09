@@ -8,6 +8,7 @@ from pong import Pong
 from test_pattern import TestPattern
 from logo_bounce import LogoBounce
 from animation import Animation
+from catch_colors import CatchColors
 
 
 class GameController:
@@ -18,6 +19,7 @@ class GameController:
         breaker = 2
         animation = 3
         logo = 4
+        catch_colors = 5
 
     def __init__(self, matrix_controller):
         self.matrix_controller = matrix_controller
@@ -39,6 +41,8 @@ class GameController:
         elif mode == GameController.Mode.logo:
             with open("logo.png", "rb") as logo_image:
                 game = LogoBounce(surface_dims, logo_image)
+        elif mode == GameController.Mode.catch_colors:
+            game = CatchColors(BoardBus.board_assignment)
         else:
             raise ValueError("Unknown game mode")
 
