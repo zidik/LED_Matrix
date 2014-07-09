@@ -4,6 +4,7 @@ import math
 import random
 from threading import Thread
 from enum import Enum
+from timer import Timer
 
 # "Cairocffi" could be also installed as "cairo"
 try:
@@ -86,12 +87,19 @@ class Breaker(game.Game):
             Thread(target=delayed_function_call, args=(1, self._reset_game)).start()
 
     def draw(self, ctx):
-        for ball in self.balls:
-            ball.draw(ctx)
+        with Timer() as tim:
+            for ball in self.balls:
+                ball.draw(ctx)
+        print("Balls:", tim.milliseconds)
 
-        self.paddle.draw(ctx)
-        for brick in self.bricks:
-            brick.draw(ctx)
+        with Timer() as tim:
+            self.paddle.draw(ctx)
+        print("Paddle:",  tim.milliseconds)
+
+        with Timer() as tim:
+            for brick in self.bricks:
+                brick.draw(ctx)
+        print("Bricks:", tim.milliseconds)
 
     def _reset_game(self):
         self._state = Breaker.State.starting_delay
