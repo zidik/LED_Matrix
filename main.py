@@ -20,8 +20,11 @@ from catch_colors import Symbol
 from breaker import Breaker
 
 
-def csv_to_int_list(color_string):
-    return [int(x.strip()) for x in color_string.split(',')]
+def csv_to_int_list(csv_string):
+    if csv_string == '':
+        return []
+    else:
+        return [int(x.strip()) for x in csv_string.split(',')]
 
 def csv_to_float_list(color_string):
     return [float(x.strip()) for x in color_string.split(',')]
@@ -71,7 +74,7 @@ def main():
             ### MAIN LOOP when gui is disabled
             run = True
             while run:
-                if input("Type 'q' to stop.") == "q":
+                if input("Type 'q' to stop.\n") == "q":
                     run = False
         except KeyboardInterrupt:
             logging.info("Keyboard interrupt received.")
