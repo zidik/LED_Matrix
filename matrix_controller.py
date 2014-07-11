@@ -97,10 +97,8 @@ class MatrixController:
         next_update = time.time()
         loopcount = 0
 
-        self.context.set_antialias(cairo.ANTIALIAS_NONE)
-
         while not self._stop.isSet() and fps != 0:
-            results = 6 * [0]
+            results = 6 * [-1]
             with Timer() as t0:
 
                 # Poll buttons -> this will call associated functions when buttons are pressed.
@@ -114,9 +112,10 @@ class MatrixController:
                     with Timer() as t1:
                         self.game.step()
                     results[1] = t1.milliseconds
-                    with Timer() as t2:
-                        self.game.draw(self.context)
-                    results[2] = t2.milliseconds
+
+                    start = time.time()
+                    self.game.draw(self.context)
+                    results[2] = (time.time()-start)*1000
 
                     with Timer() as t3:
                         # Get data from surface and convert it to numpy array

@@ -4,6 +4,7 @@ import math
 import random
 from threading import Thread
 from enum import Enum
+import time
 
 # "Cairocffi" could be also installed as "cairo"
 try:
@@ -30,7 +31,7 @@ class Breaker(game.Game):
 
     def __init__(self, field_dims):
         self.field_dims = field_dims
-        self.dirty_areas = []
+        self.invalidated_areas = []
         self.player = Player()
         self.paddle = Paddle(0, self.field_dims[1] - 4)  # Paddle on the bottom
         self.balls = []
@@ -68,13 +69,13 @@ class Breaker(game.Game):
 
         dirty_area_paddle = self.paddle.step()
         if dirty_area_paddle is not None:
-            self.dirty_areas.append(dirty_area_paddle)
+            self.invalidated_areas.append(dirty_area_paddle)
 
         self.paddle.limit(self.field_dims[1] - 1)
 
         for ball in self.balls:
             dirty_area_ball = ball.step()
-            self.dirty_areas.append(dirty_area_ball)
+            self.invalidated_areas.append(dirty_area_ball)
 
             self._test_ball_collisions(ball)
 
@@ -95,39 +96,55 @@ class Breaker(game.Game):
             Thread(target=delayed_function_call, args=(1, self._reset_game)).start()
 
     def draw(self, ctx):
-        """
-        for dirty_area in self.dirty_areas:
-            ctx.save()
-            ctx.rectangle(int(dirty_area.left), int(dirty_area.top), math.ceil(dirty_area.width), math.ceil(dirty_area.height))
-            ctx.clip_preserve()  # path will be cleared in next If/Else
-            ctx.set_source_rgb(0, 0, 0)
-            ctx.paint()
-            display_redraw = False
-            if display_redraw:
-                pat = cairo.SolidPattern(0, 0, 1.0, 0.8)
-                ctx.set_source(pat)
-                ctx.stroke()
-            else:
-                ctx.new_path()
-            self._draw(ctx)
-            ctx.restore()
-        self.dirty_areas = []
-        """
+        for invalidated_area in self.invalidated_areas:
+            self._draw(ctx, invalidated_area)
+        self.invalidated_areas = []
 
+    def _draw(self, ctx, invalidated_rect):
+        not_redrawn = self.balls + [self.paddle] + self.bricks  # Elements that will not be redrawn
+        redrawn = []    # Elements that will be redrawn
+
+        assert isinstance(invalidated_rect, Rectangle)
+
+        new_added = True
+        start = time.time()
+        comparisons = 0
+        while new_added:
+            new_added = False
+            for element in not_redrawn:
+                comparisons += 1
+                if invalidated_rect.intersection(element):
+                    not_redrawn.remove(element)
+                    redrawn.append(element)
+                    invalidated_rect = invalidated_rect.union(element) # Grow invalidated rect
+                    new_added = True # invalidated_rect in now bigger, we have to check all again
+                    break
+
+        #####DEBUG##########
+        if comparisons > 30:
+            print("comparisons:{}".format(comparisons))
+        #milliseconds = (time.time()-start)*1000
+        #if milliseconds:
+        #    print(milliseconds)
+        ############
+
+        ctx.rectangle(
+            int(invalidated_rect.left),
+            int(invalidated_rect.top),
+            math.ceil(invalidated_rect.width),
+            math.ceil(invalidated_rect.height)
+        )
+        display_redraw = True
+        if display_redraw:
+            pat = cairo.SolidPattern(0, 0, 1.0, 0.5)
+            ctx.set_source(pat)
+            ctx.stroke_preserve()
         ctx.set_source_rgb(0, 0, 0)
-        ctx.paint()
-        self._draw(ctx)
+        ctx.fill()
+        #print("redrawn elements", len(redrawn))
+        for element in redrawn:
+            element.draw(ctx)
 
-
-
-    def _draw(self, ctx):
-        for ball in self.balls:
-            ball.draw(ctx)
-
-        self.paddle.draw(ctx)
-
-        for brick in self.bricks:
-            brick.draw(ctx)
 
     def _reset_game(self):
         self._state = Breaker.State.starting_delay
@@ -139,7 +156,7 @@ class Breaker(game.Game):
         self.paddle.set_health(self.player.max_hp, self.player.max_hp)
         self.player.reset()
         Thread(target=delayed_function_call, args=(2, self._start_waiting)).start()
-        self.dirty_areas = [Rectangle(0, 0, self.field_dims[0], self.field_dims[1])]
+        self.invalidated_areas = [Rectangle(0, 0, self.field_dims[0], self.field_dims[1])]
 
     def _start_waiting(self):
         self._new_ball()
@@ -152,9 +169,11 @@ class Breaker(game.Game):
         collide_to_left_wall(ball)
         collide_to_right_wall(ball, self.field_dims[0])
         collide_to_top_wall(ball)
+
         for brick in self.bricks:
             if not brick.broken:
                 self._collide_ball_to_brick(ball, brick)
+
 
     def _collide_ball_to_brick(self, ball, brick):
         intersection = brick.intersection(ball)
@@ -172,11 +191,11 @@ class Breaker(game.Game):
                     ball.center_x - brick.center_x
                 )
 
-            brick.broken = True
+            self.bricks.remove(brick)
             probability = 0.1
             if random.random() < probability:
                 self._new_ball()  # add a ball with same speed
-            self.dirty_areas.append(brick)
+            self.invalidated_areas.append(brick)
 
     def _is_ball_outside(self, ball):
         pixels_out = 1

@@ -73,19 +73,27 @@ class Rectangle():
     def center_y(self, value):
         self.top = value - self.height / 2
 
+    def intersects(self, other):
+        return not (
+            self.bottom <= other.top or
+            self.top >= other.bottom or
+            self.left >= other.right or
+            self.right <= other.left
+        )
+
     def intersection(self, other):
         """
         :param other: Other rectangle
         :return: new rectangle with the size of the intersection
         if elements do not intersect - None
         """
-        left = max(self.left, other.left)
-        right = min(self.right, other.right)
-        bottom = min(self.bottom, other.bottom)
-        top = max(self.top, other.top)
-        width = right - left
-        height = bottom - top
-        if width > 0 and height > 0:
+        if self.intersects(other):
+            left = max(self.left, other.left)
+            right = min(self.right, other.right)
+            bottom = min(self.bottom, other.bottom)
+            top = max(self.top, other.top)
+            width = right - left
+            height = bottom - top
             return Rectangle(left, top, width, height)
         else:
             return None
@@ -298,11 +306,21 @@ class Paddle(Rectangle):
         return dirty_area
 
     def limit(self, limit):
+        limited = False
+
         if self.left <= 0:
             self.left = 0
+            limited = True
 
         if self.right >= limit + 1:
             self.right = limit + 1
+            limited = True
+
+        if limited:
+            #Stop
+            self.target_position = self.center_x
+
+
 
     def draw(self, cr):
 
