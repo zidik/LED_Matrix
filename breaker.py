@@ -136,7 +136,9 @@ class Breaker(game.Game):
 
     def _start_waiting(self):
         self._new_ball()
-        self._state = Breaker.State.waiting_push
+        #self._state = Breaker.State.waiting_push
+        #TESTING
+        self._state = Breaker.State.running
 
     def _test_ball_collisions(self, ball):
         collide_ball_to_paddle(ball, self.paddle)
