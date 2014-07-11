@@ -97,6 +97,8 @@ class MatrixController:
         next_update = time.time()
         loopcount = 0
 
+        self.context.set_antialias(cairo.ANTIALIAS_NONE)
+
         while not self._stop.isSet() and fps != 0:
             results = 6 * [0]
             with Timer() as t0:
