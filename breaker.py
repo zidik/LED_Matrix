@@ -13,8 +13,7 @@ except ImportError:
 
 import game
 from game_elements_library import Rectangle, Player, Paddle, Ball, Brick, delayed_function_call, \
-    collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall, collide_to_top_wall, \
-    are_colliding_rect_rect
+    collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall, collide_to_top_wall
 
 
 class Breaker(game.Game):
@@ -96,6 +95,7 @@ class Breaker(game.Game):
             Thread(target=delayed_function_call, args=(1, self._reset_game)).start()
 
     def draw(self, ctx):
+        """
         for dirty_area in self.dirty_areas:
             ctx.save()
             ctx.rectangle(int(dirty_area.left), int(dirty_area.top), math.ceil(dirty_area.width), math.ceil(dirty_area.height))
@@ -112,6 +112,13 @@ class Breaker(game.Game):
             self._draw(ctx)
             ctx.restore()
         self.dirty_areas = []
+        """
+
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.paint()
+        self._draw(ctx)
+
+
 
     def _draw(self, ctx):
         for ball in self.balls:
@@ -150,8 +157,8 @@ class Breaker(game.Game):
                 self._collide_ball_to_brick(ball, brick)
 
     def _collide_ball_to_brick(self, ball, brick):
-        if are_colliding_rect_rect(ball, brick):
-            intersection = brick.intersection(ball)
+        intersection = brick.intersection(ball)
+        if intersection is not None:
             if intersection.width > intersection.height:
                 #bounce from top-or bottom
                 ball.speed_y = math.copysign(

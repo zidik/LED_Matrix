@@ -77,6 +77,7 @@ class Rectangle():
         """
         :param other: Other rectangle
         :return: new rectangle with the size of the intersection
+        if elements do not intersect - None
         """
         left = max(self.left, other.left)
         right = min(self.right, other.right)
@@ -84,7 +85,10 @@ class Rectangle():
         top = max(self.top, other.top)
         width = right - left
         height = bottom - top
-        return Rectangle(left, top, width, height)
+        if width > 0 and height > 0:
+            return Rectangle(left, top, width, height)
+        else:
+            return None
 
     def union(self, other):
         """
@@ -356,7 +360,7 @@ def collide_ball_to_paddle(ball, paddle):
     assert (isinstance(paddle, Paddle))
     assert (isinstance(ball, Ball))
     heading_delta = 0.1  # change of heading of the ball on hitting edges of the paddle
-    if are_colliding_rect_rect(ball, paddle):
+    if paddle.intersection(ball):
         #put ball back on the board
         if paddle.flipped:
             ball.top = paddle.bottom
@@ -395,12 +399,3 @@ def collide_to_bottom_wall(obj, limit):
     if obj.bottom >= limit:
         obj.speed_y = -abs(obj.speed_y)
         obj.bottom = 2 * limit - obj.bottom
-
-
-def are_colliding_rect_rect(elem1, elem2):
-    return not (
-        elem1.bottom < elem2.top or
-        elem1.top > elem2.bottom or
-        elem1.left > elem2.right or
-        elem1.right < elem2.left
-    )
