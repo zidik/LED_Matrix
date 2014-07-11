@@ -126,9 +126,6 @@ class MatrixController:
                         numpy.copyto(self.displayed_data, a[:, :, :3])
                     results[3] = t3.milliseconds
 
-                    self.context.set_source_rgb(0, 0, 0)
-                    self.context.paint()
-
                 ##UPDATE END
 
                 self.signal_update_boards()

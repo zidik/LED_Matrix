@@ -5,8 +5,14 @@ import random
 from threading import Thread
 from enum import Enum
 
+# "Cairocffi" could be also installed as "cairo"
+try:
+    import cairocffi as cairo
+except ImportError:
+    import cairo
+
 import game
-from game_elements_library import Player, Paddle, Ball, Brick, delayed_function_call, \
+from game_elements_library import Rectangle, Player, Paddle, Ball, Brick, delayed_function_call, \
     collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall, collide_to_top_wall, \
     are_colliding_rect_rect
 
@@ -25,7 +31,7 @@ class Breaker(game.Game):
 
     def __init__(self, field_dims):
         self.field_dims = field_dims
-
+        self.dirty_areas = []
         self.player = Player()
         self.paddle = Paddle(0, self.field_dims[1] - 4)  # Paddle on the bottom
         self.balls = []
@@ -61,11 +67,16 @@ class Breaker(game.Game):
         for ball in self.balls:
             ball.speed = self.ball_speed
 
-        self.paddle.step()
+        dirty_area_paddle = self.paddle.step()
+        if dirty_area_paddle is not None:
+            self.dirty_areas.append(dirty_area_paddle)
+
         self.paddle.limit(self.field_dims[1] - 1)
 
         for ball in self.balls:
-            ball.step()
+            dirty_area_ball = ball.step()
+            self.dirty_areas.append(dirty_area_ball)
+
             self._test_ball_collisions(ball)
 
             if self._is_ball_outside(ball):
@@ -85,6 +96,24 @@ class Breaker(game.Game):
             Thread(target=delayed_function_call, args=(1, self._reset_game)).start()
 
     def draw(self, ctx):
+        for dirty_area in self.dirty_areas:
+            ctx.save()
+            ctx.rectangle(int(dirty_area.left), int(dirty_area.top), math.ceil(dirty_area.width), math.ceil(dirty_area.height))
+            ctx.clip_preserve()  # path will be cleared in next If/Else
+            ctx.set_source_rgb(0, 0, 0)
+            ctx.paint()
+            display_redraw = False
+            if display_redraw:
+                pat = cairo.SolidPattern(0, 0, 1.0, 0.8)
+                ctx.set_source(pat)
+                ctx.stroke()
+            else:
+                ctx.new_path()
+            self._draw(ctx)
+            ctx.restore()
+        self.dirty_areas = []
+
+    def _draw(self, ctx):
         for ball in self.balls:
             ball.draw(ctx)
 
@@ -103,6 +132,7 @@ class Breaker(game.Game):
         self.paddle.set_health(self.player.max_hp, self.player.max_hp)
         self.player.reset()
         Thread(target=delayed_function_call, args=(2, self._start_waiting)).start()
+        self.dirty_areas = [Rectangle(0, 0, self.field_dims[0], self.field_dims[1])]
 
     def _start_waiting(self):
         self._new_ball()
@@ -137,6 +167,7 @@ class Breaker(game.Game):
             probability = 0.1
             if random.random() < probability:
                 self._new_ball()  # add a ball with same speed
+            self.dirty_areas.append(brick)
 
     def _is_ball_outside(self, ball):
         pixels_out = 1

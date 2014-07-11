@@ -74,13 +74,30 @@ class Rectangle():
         self.top = value - self.height / 2
 
     def intersection(self, other):
+        """
+        :param other: Other rectangle
+        :return: new rectangle with the size of the intersection
+        """
         left = max(self.left, other.left)
         right = min(self.right, other.right)
         bottom = min(self.bottom, other.bottom)
         top = max(self.top, other.top)
         width = right - left
         height = bottom - top
-        return Rectangle(None, None, width, height)
+        return Rectangle(left, top, width, height)
+
+    def union(self, other):
+        """
+        :param other: Other rectangle
+        :return: new rectangle that completely covers both rectangles
+        """
+        left = min(self.left, other.left)
+        right = max(self.right, other.right)
+        bottom = max(self.bottom, other.bottom)
+        top = min(self.top, other.top)
+        width = right - left
+        height = bottom - top
+        return Rectangle(left, top, width, height)
 
 
 class Circle():
@@ -184,8 +201,15 @@ class Ball(Circle, Moving):
         self.fill_pattern = cairo.SolidPattern(b, g, r, a)
 
     def step(self):
+        last_bounding_box = Rectangle(self.left-1, self.top-1, 2*self.radius+2, 2*self.radius+2)
+
         self.center_x += self.speed_x
         self.center_y += self.speed_y
+
+        new_bounding_box = Rectangle(self.left-1, self.top-1, 2*self.radius+2, 2*self.radius+2)
+        dirty_area = last_bounding_box.union(new_bounding_box)
+        return dirty_area
+
 
     def draw(self, cairo_context):
         cairo_context.arc(self.center_x, self.center_y, self.radius, 0, 2 * math.pi)
@@ -201,7 +225,6 @@ class Paddle(Rectangle):
     height = 4
     stroke_color = [(0, 1, 0, 1), (1, 0, 0, 1)]
     fill_color = [(0, 1, 0, 1), (1, 0, 0, 1)]
-
 
     def __init__(self, left, top, speed=1, flipped=False):
         super().__init__(left, top, Paddle.width, Paddle.height)
@@ -259,10 +282,16 @@ class Paddle(Rectangle):
         self.target_position = target_position
 
     def step(self):
+        dirty_area = None
         # calculate difference between current and target position
         delta = self.target_position - self.center_x
-        #move accordingly (limited by speed)
-        self.center_x += clamp(delta, -self.speed, self.speed)
+        if abs(delta) > 0:
+            last_bounding_box = Rectangle(self.left, self.top, self.width, self.height)
+            #move accordingly (limited by speed)
+            self.center_x += clamp(delta, -self.speed, self.speed)
+            new_bounding_box = Rectangle(self.left, self.top, self.width, self.height)
+            dirty_area = last_bounding_box.union(new_bounding_box)
+        return dirty_area
 
     def limit(self, limit):
         if self.left <= 0:
