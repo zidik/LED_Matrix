@@ -210,6 +210,7 @@ class Breaker(game.Game):
         self.balls.append(ball)
 
     def _reset_bricks(self):
+        self.bricks = []
         distance_from_top = 15
         dims = 6, 4
         brick_dims = 14, 6
