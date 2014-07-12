@@ -71,9 +71,7 @@ class Breaker(game.Game):
         for ball in self.balls:
             ball.speed = self.ball_speed
 
-        dirty_area_paddle = self.paddle.step()
-        if dirty_area_paddle is not None:
-            self.invalidated_areas.append(dirty_area_paddle)
+        self.paddle.step()
 
         self.paddle.limit(self.field_dims[1] - 1)
 
@@ -100,69 +98,55 @@ class Breaker(game.Game):
             Thread(target=delayed_function_call, args=(1, self._reset_game)).start()
 
     def draw(self, ctx):
-        start = time.time()
+        if self.paddle.invalidated_area is not None:
+            self.invalidated_areas.append(self.paddle.invalidated_area)
+            self.paddle.invalidated_area = None
+
         for invalidated_area in self.invalidated_areas:
             self._draw(ctx, invalidated_area)
         self.invalidated_areas = []
-        print("draw={}ms".format((time.time()-start)*1000))
 
     def _draw(self, ctx, invalidated_rect):
-        start=time.time()
+        ### DEBUG OPTIONS ###
+        display_redraw = True
+        #####################
+
+
         not_redrawn = self.balls + [self.paddle] + self.bricks  # Elements that will not be redrawn
         redrawn = []    # Elements that will be redrawn
 
-        assert isinstance(invalidated_rect, Rectangle)
-
+        # Add all elements that reside inside "invalidated rect" to list "redrawn"
         new_added = True
-        start = time.time()
-        comparisons = 0
         while new_added:
             new_added = False
             for element in not_redrawn:
-                comparisons += 1
                 if invalidated_rect.intersection(element):
                     not_redrawn.remove(element)
                     redrawn.append(element)
-                    invalidated_rect = invalidated_rect.union(element) # Grow invalidated rect
-                    new_added = True # invalidated_rect in now bigger, we have to check all again
+                    invalidated_rect.union_ip(element)  # Grow invalidated rect
+                    new_added = True  # invalidated_rect in now bigger, we have to check all again
                     break
 
-        #####DEBUG##########
-        if comparisons > 30:
-            print("comparisons:{}".format(comparisons))
-        #milliseconds = (time.time()-start)*1000
-        #if milliseconds:
-        #    print(milliseconds)
-        ############
-        t2 = time.time()
         ctx.rectangle(
             int(invalidated_rect.left),
             int(invalidated_rect.top),
             math.ceil(invalidated_rect.width),
             math.ceil(invalidated_rect.height)
         )
-        display_redraw = True
+
+        # show redrawn area
         if display_redraw:
             pat = cairo.SolidPattern(0, 0, 1.0, 0.5)
             ctx.set_source(pat)
             ctx.stroke_preserve()
+
+        #Clear area inside area being redrawn
         ctx.set_source_rgb(0, 0, 0)
         ctx.fill()
-        #print("redrawn elements", len(redrawn))
-        t3 = time.time()
+
+        # Redraw all elements, that are inside this area
         for element in redrawn:
             element.draw(ctx)
-        t4 = time.time()
-        print(
-            "calculation={}ms, clear+displayredraw={}ms, redraw={}ms, total={}ms".format(
-                (t2-start)*1000,
-                (t3-t2)*1000,
-                (t4-t3)*1000,
-                (t4-start)*1000
-            )
-        )
-
-
 
     def _reset_game(self):
         self._state = Breaker.State.starting_delay

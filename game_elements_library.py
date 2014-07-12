@@ -103,13 +103,25 @@ class Rectangle():
         :param other: Other rectangle
         :return: new rectangle that completely covers both rectangles
         """
+        left, top, width, height = self._union(other)
+        return Rectangle(left, top, width, height)
+
+    def union_ip(self, other):
+        """
+        Grows self so it covers the other rectangle too
+        :param other: Other rectangle
+        """
+        self.left, self.top, self.width, self.height = self._union(other)
+
+    def _union(self, other):
         left = min(self.left, other.left)
         right = max(self.right, other.right)
         bottom = max(self.bottom, other.bottom)
         top = min(self.top, other.top)
         width = right - left
         height = bottom - top
-        return Rectangle(left, top, width, height)
+        return left, top, width, height
+
 
 
 class Circle():
@@ -244,6 +256,7 @@ class Paddle(Rectangle):
         self.flipped = flipped  # flips the paddle up/down
         self.gradient_pos = 0  # position of the gradient line on the paddle
         self.target_position = self.center_x  # Paddle will move towards it each step
+        self.invalidated_area = None  # area of canvas that Paddle thinks should be redrawn
 
     def set_health(self, health, max_health, blink=3):
         """
@@ -267,11 +280,15 @@ class Paddle(Rectangle):
         :param health: current health value being shown
         :param max_health: maximum health value
         :param blink_count: number ob blinks left
-        :param show_current: True if param "health" is current healt value, otherwise it is previous
+        :param show_current: True if param "health" is current health value, otherwise it is previous
         """
         blink_period = 0.4
         if show_current:
             self.gradient_pos = 1 - (health-1)/(max_health-1)
+
+            #Invalidate whole area so it will be redrawn
+            self._invalidate_rect(Rectangle(self.left, self.top, self.width, self.height))
+
             if blink_count <= 0:
                 return
 
@@ -294,7 +311,6 @@ class Paddle(Rectangle):
         self.target_position = target_position
 
     def step(self):
-        dirty_area = None
         # calculate difference between current and target position
         delta = self.target_position - self.center_x
         if abs(delta) > 0:
@@ -302,8 +318,15 @@ class Paddle(Rectangle):
             #move accordingly (limited by speed)
             self.center_x += clamp(delta, -self.speed, self.speed)
             new_bounding_box = Rectangle(self.left, self.top, self.width, self.height)
-            dirty_area = last_bounding_box.union(new_bounding_box)
-        return dirty_area
+            invalidated_area = last_bounding_box.union(new_bounding_box)
+            self._invalidate_rect(invalidated_area)
+
+    def _invalidate_rect(self, rect):
+        if self.invalidated_area is None:
+            self.invalidated_area = rect
+        else:
+            self.invalidated_area.union_ip(rect)
+
 
     def limit(self, limit):
         limited = False
@@ -321,9 +344,7 @@ class Paddle(Rectangle):
             self.target_position = self.center_x
 
 
-
     def draw(self, cr):
-
         #Calculate Path
         y = self.center_y
         r = self.height / 2 - 0.5
