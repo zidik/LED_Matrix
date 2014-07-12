@@ -100,11 +100,14 @@ class Breaker(game.Game):
             Thread(target=delayed_function_call, args=(1, self._reset_game)).start()
 
     def draw(self, ctx):
+        start = time.time()
         for invalidated_area in self.invalidated_areas:
             self._draw(ctx, invalidated_area)
         self.invalidated_areas = []
+        print("draw={}ms".format((time.time()-start)*1000))
 
     def _draw(self, ctx, invalidated_rect):
+        start=time.time()
         not_redrawn = self.balls + [self.paddle] + self.bricks  # Elements that will not be redrawn
         redrawn = []    # Elements that will be redrawn
 
@@ -131,7 +134,7 @@ class Breaker(game.Game):
         #if milliseconds:
         #    print(milliseconds)
         ############
-
+        t2 = time.time()
         ctx.rectangle(
             int(invalidated_rect.left),
             int(invalidated_rect.top),
@@ -146,8 +149,19 @@ class Breaker(game.Game):
         ctx.set_source_rgb(0, 0, 0)
         ctx.fill()
         #print("redrawn elements", len(redrawn))
+        t3 = time.time()
         for element in redrawn:
             element.draw(ctx)
+        t4 = time.time()
+        print(
+            "calculation={}ms, clear+displayredraw={}ms, redraw={}ms, total={}ms".format(
+                (t2-start)*1000,
+                (t3-t2)*1000,
+                (t4-t3)*1000,
+                (t4-start)*1000
+            )
+        )
+
 
 
     def _reset_game(self):
