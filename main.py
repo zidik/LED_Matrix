@@ -57,7 +57,7 @@ def main():
     if gui_enabled:
         ### Starting up GUI
         root = tkinter.Tk()
-        root.geometry("300x750+50+50")
+        root.geometry("302x750+50+50")
         root.title("LED control panel")
         app = GUIapp(root, game_controller)
         # Matrix controller will trigger GUI update when data changes

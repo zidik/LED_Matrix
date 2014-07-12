@@ -51,7 +51,7 @@ class GUIapp:
         # Start refreshing GUI
         self.master.after(0, self._refresh_gui)
 
-    def assign_keys(self, mode, game):
+    def assign_keys(self, mode):
         override_keys = []
         if mode == GameController.Mode.pong:
             override_keys = [
@@ -63,8 +63,10 @@ class GUIapp:
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
             ]
         if mode == GameController.Mode.animation or\
-            mode == GameController.Mode.catch_colors:
+            mode == GameController.Mode.catch_colors or\
+            mode == GameController.Mode.catch_colors_2P:
             override_keys = [
+                '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
                 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö',
                 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'

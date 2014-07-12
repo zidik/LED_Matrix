@@ -35,9 +35,7 @@ class MatrixController:
         self.context = cairo.Context(self.surface)
         # Numpy array of data displayed on floor and GUI
         #Image from Cairo surface is copied into this buffer every frame
-        self.displayed_data = None
-        
-        self.clear_displayed_data()
+        self.displayed_data = numpy.zeros((self.surface_dims[0], self.surface_dims[1], 3), dtype=numpy.uint8)
 
         self.assign_boards()
 
@@ -59,9 +57,6 @@ class MatrixController:
         for bus in self.board_buses:
             assert isinstance(bus, BoardBus)
             bus.broadcast_board.ping()
-
-    def clear_displayed_data(self):
-        self.displayed_data = numpy.zeros((self.surface_dims[0], self.surface_dims[1], 3), dtype=numpy.uint8)
 
     def _create_buses(self, serial_ports):
         serial_connections = []
@@ -90,6 +85,7 @@ class MatrixController:
             thread.join()
         logging.debug("Matrix controller stopped")
 
+    # noinspection PyTypeChecker
     def update_data(self):
         fps = 25
         update_period = 1.0/fps
@@ -124,7 +120,10 @@ class MatrixController:
                         a = numpy.frombuffer(buf, numpy.uint8)
                         a.shape = (self.surface_dims[0], self.surface_dims[1], 4)
                         # Strip Alpha values and copy to our main numpy array
-                        numpy.copyto(self.displayed_data, a[:, :, :3])
+                        # also switch BGR to RGB
+                        numpy.copyto(self.displayed_data[:, :, 0], a[:, :, 2])
+                        numpy.copyto(self.displayed_data[:, :, 1], a[:, :, 1])
+                        numpy.copyto(self.displayed_data[:, :, 2], a[:, :, 0])
                     results[3] = t3.milliseconds
 
                 ##UPDATE END

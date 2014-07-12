@@ -8,7 +8,7 @@ from pong import Pong
 from test_pattern import TestPattern
 from logo_bounce import LogoBounce
 from animation import Animation
-from catch_colors import CatchColors
+from catch_colors import CatchColors, CatchColors2P
 
 
 class GameController:
@@ -20,6 +20,7 @@ class GameController:
         animation = 3
         logo = 4
         catch_colors = 5
+        catch_colors_2P = 6
 
     def __init__(self, matrix_controller):
         self.matrix_controller = matrix_controller
@@ -29,8 +30,6 @@ class GameController:
         logging.info("Game set to {}".format(mode))
         surface_dims = self.matrix_controller.surface_dims
         if mode == GameController.Mode.nothing:
-            self.matrix_controller.clear_displayed_data()
-            self.matrix_controller
             game = None
 
         elif mode == GameController.Mode.test:
@@ -56,12 +55,16 @@ class GameController:
             game = CatchColors(BoardBus.board_assignment)
             self._add_all_buttons(game)
 
+        elif mode == GameController.Mode.catch_colors_2P:
+            game = CatchColors2P(BoardBus.board_assignment, surface_dims)
+            self._add_all_buttons(game)
+
         else:
             raise ValueError("Unknown game mode")
 
         # notify all of change
         for func in self._call_on_game_change:
-            func(mode, game)
+            func(mode)
 
         self.matrix_controller.game = game
 
