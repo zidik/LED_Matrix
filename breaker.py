@@ -22,6 +22,10 @@ class Breaker(game.Game):
         [(1, 1, 1, 1), (1, 1, 1, 1)],
         [(0.5, 0.5, 0.5, 1), (0.5, 0.5, 0.5, 1)]
     ]
+    brick_columns = 6
+    brick_rows = 4
+
+    multi_ball_probability = 0.1
 
     class State(Enum):
         starting_delay = 0
@@ -174,7 +178,6 @@ class Breaker(game.Game):
             if not brick.broken:
                 self._collide_ball_to_brick(ball, brick)
 
-
     def _collide_ball_to_brick(self, ball, brick):
         intersection = brick.intersection(ball)
         if intersection is not None:
@@ -192,8 +195,7 @@ class Breaker(game.Game):
                 )
 
             self.bricks.remove(brick)
-            probability = 0.1
-            if random.random() < probability:
+            if random.random() < Breaker.multi_ball_probability:
                 self._new_ball()  # add a ball with same speed
             self.invalidated_areas.append(brick)
 
@@ -212,13 +214,12 @@ class Breaker(game.Game):
     def _reset_bricks(self):
         self.bricks = []
         distance_from_top = 15
-        dims = 6, 4
         brick_dims = 14, 6
-        for y in range(dims[1]):
-            for x in range(dims[0]):
+        for y in range(Breaker.brick_rows):
+            for x in range(Breaker.brick_columns):
                 self.bricks.append(
                     Brick(
-                        x=(self.field_dims[0] - brick_dims[0] * dims[0]) / 2 + x * brick_dims[0],
+                        x=(self.field_dims[0] - brick_dims[0] * Breaker.brick_columns) / 2 + x * brick_dims[0],
                         y=distance_from_top + y * brick_dims[1],
                         width=brick_dims[0],
                         height=brick_dims[1],

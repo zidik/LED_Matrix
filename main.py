@@ -103,10 +103,13 @@ def configure_other(config):
         csv_to_float_list(config["Paddle"]["Fill color 1"])
     ]
 
-    Breaker.brick_colors =[
+    Breaker.brick_colors = [
         [csv_to_float_list(config["Breaker"]["Stroke color 0"]), csv_to_float_list(config["Breaker"]["Fill color 0"])],
         [csv_to_float_list(config["Breaker"]["Stroke color 1"]), csv_to_float_list(config["Breaker"]["Fill color 1"])]
     ]
+    Breaker.brick_columns = int(config["Breaker"]["Columns"])
+    Breaker.brick_rows = int(config["Breaker"]["Rows"])
+    Breaker.multi_ball_probability = float(config["Breaker"]["Multiple ball probability"])
 
     Symbol.color_start = csv_to_float_list(config["Catch Colors"]["Symbol start color"])
     Symbol.color_end = csv_to_float_list(config["Catch Colors"]["Symbol end color"])
