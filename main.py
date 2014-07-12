@@ -16,7 +16,7 @@ from webserver import MatrixWebserver
 
 #Imported for configuring
 from game_elements_library import Ball, Paddle
-from catch_colors import Symbol
+from catch_colors import FadingSymbol
 from breaker import Breaker
 
 
@@ -53,6 +53,7 @@ def main():
     webserver = MatrixWebserver(game_controller, address="", port=8000)
     webserver.start()
 
+    root = None
     if gui_enabled:
         ### Starting up GUI
         root = tkinter.Tk()
@@ -62,14 +63,14 @@ def main():
         # Matrix controller will trigger GUI update when data changes
         matrix_controller.connect("data_update", app.update)
 
-        game_controller.set_game_mode(GameController.Mode.breaker)
+    game_controller.set_game_mode(GameController.Mode.catch_colors)
 
+    if gui_enabled:
         logging.debug("Entering tkinter mainloop")
         ### MAIN LOOP when GUI is enabled
         root.mainloop()
         logging.debug("Tkinter mainloop has exited.")
     else:
-        game_controller.set_game_mode(GameController.Mode.breaker)
         try:
             ### MAIN LOOP when gui is disabled
             run = True
@@ -111,11 +112,10 @@ def configure_other(config):
     Breaker.brick_rows = int(config["Breaker"]["Rows"])
     Breaker.multi_ball_probability = float(config["Breaker"]["Multiple ball probability"])
 
-    Symbol.color_start = csv_to_float_list(config["Catch Colors"]["Symbol start color"])
-    Symbol.color_end = csv_to_float_list(config["Catch Colors"]["Symbol end color"])
-    Symbol.lifetime = float(config["Catch Colors"]["Symbol lifetime"])
-    Symbol.change_period = float(config["Catch Colors"]["Symbol change period"])
-
+    FadingSymbol.color_start = csv_to_float_list(config["Catch Colors"]["Symbol start color"])
+    FadingSymbol.color_end = csv_to_float_list(config["Catch Colors"]["Symbol end color"])
+    FadingSymbol.lifetime = float(config["Catch Colors"]["Symbol lifetime"])
+    FadingSymbol.change_period = float(config["Catch Colors"]["Symbol change period"])
 
 
 if __name__ == '__main__':
