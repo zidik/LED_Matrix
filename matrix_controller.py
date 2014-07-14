@@ -8,6 +8,7 @@ import serial
 import numpy
 
 
+
 # "Cairocffi" could be also installed as "cairo"
 try:
     import cairocffi as cairo
@@ -38,7 +39,7 @@ class MatrixController:
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.surface_dims[0], self.surface_dims[1])
         self.context = cairo.Context(self.surface)
         # Numpy array of data displayed on floor and GUI
-        #Image from Cairo surface is copied into this buffer every frame
+        # Image from Cairo surface is copied into this buffer every frame
         self.displayed_data = numpy.zeros((self.surface_dims[0], self.surface_dims[1], 3), dtype=numpy.uint8)
 
         self._assign_boards()
@@ -74,7 +75,7 @@ class MatrixController:
         t = threading.Thread(target=self.update_data, name="DataUpd Thread")
         self.threads.append(t)
 
-        #"Sensor Refresh"-Loop - updates sensor readings
+        # "Sensor Refresh"-Loop - updates sensor readings
         t = threading.Thread(target=self.refresh_sensor_data, name="Sensor Thread")
         self.threads.append(t)
 
@@ -113,7 +114,7 @@ class MatrixController:
         Loop that advances the game/animation
         """
         fps = MatrixController.data_update_FPS
-        update_period = 1.0/fps
+        update_period = 1.0 / fps
 
         next_update = time.time()
         loopcount = 0
@@ -129,14 +130,13 @@ class MatrixController:
 
                 # # UPDATE
                 if self.game is not None:
-
                     with Timer() as t1:
                         self.game.step()
                     results[1] = t1.milliseconds
 
                     start = time.time()
                     self.game.draw(self.context)
-                    results[2] = (time.time()-start)*1000
+                    results[2] = (time.time() - start) * 1000
 
                     with Timer() as t3:
                         # Get data from surface and convert it to numpy array
@@ -151,13 +151,12 @@ class MatrixController:
                         numpy.copyto(self.displayed_data[:, :, 2], a[:, :, 0])
                     results[3] = t3.milliseconds
 
-                ##UPDATE END
+                # #UPDATE END
 
                 self._signal_update_boards()
                 if self.data_update_callback is not None:
                     self.data_update_callback()  # signal caller (GUI for example)
                 self.fps["Game"].cycle_complete()
-
 
                 next_update += update_period
                 sleep_time = next_update - time.time()
@@ -178,19 +177,18 @@ class MatrixController:
                         self._stop.wait(sleep_time)
                     results[4] = t4.milliseconds
 
-
             results[0] = t0.milliseconds
 
             # Timing info
             loopcount += 1
-            if loopcount > 10*fps or skipped_frames > 0:
+            if loopcount > 10 * fps or skipped_frames > 0:
                 loopcount = 0
                 logging.debug(
                     "update total: {0[0]:.3f} step: {0[1]:.3f}ms, "
                     "draw: {0[2]:.3f}ms, convert: {0[3]:.3f}ms, \n"
                     "sleep: {0[4]:.3f}ms({1:.3f}) skipped_frames: {2} - {0[5]:.3f}ms".format(
                         results,
-                        sleep_time*1000,
+                        sleep_time * 1000,
                         skipped_frames
                     )
                 )
@@ -231,7 +229,7 @@ class MatrixController:
         """
         connect function to an event.
         """
-        #If data gets updated, data_update_callback will be called
+        # If data gets updated, data_update_callback will be called
         if event_name == "data_update":
             self.data_update_callback = update_gui
 

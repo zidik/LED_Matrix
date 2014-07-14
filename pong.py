@@ -11,7 +11,6 @@ from game_elements_library import Player, Paddle, Ball, delayed_function_call, \
 
 
 class Pong(game.Game):
-
     lives = 4
 
     init_ball_speed = 0.1
@@ -53,10 +52,10 @@ class Pong(game.Game):
         else:
             raise ValueError("Invalid Player")
 
-        if not(0 <= button_number <= 9):
+        if not (0 <= button_number <= 9):
             raise ValueError("Invalid ButtonNumber")
 
-        #Start the game if we were waiting for user
+        # Start the game if we were waiting for user
         if self._state == Pong.State.waiting_push:
             self._state = Pong.State.running
 
@@ -66,7 +65,7 @@ class Pong(game.Game):
         if not (self._state == Pong.State.running):
             return
 
-        #Make game quicker
+        # Make game quicker
         self._p1_paddle.speed += Pong.speed_change
         self._p2_paddle.speed += Pong.speed_change
         self.ball_speed += Pong.speed_change
@@ -101,7 +100,7 @@ class Pong(game.Game):
                     thread.start()
 
     def draw(self, ctx):
-        #Clear Background
+        # Clear Background
         ctx.set_source_rgb(0, 0, 0)
         ctx.paint()
 

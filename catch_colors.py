@@ -39,17 +39,17 @@ class CatchColors2P(game.Game):
         color = CatchColors2P.P1_color
         x, y = surface_dims
         self._P1_points_bars = [
-            PointsBar(max_points, color, (0, 0), (0, y-1-2)),
-            PointsBar(max_points, color, (0, y-1), (x-1-2, y-1)),
-            PointsBar(max_points, color, (x-1, y-1), (x-1, 0+2)),
-            PointsBar(max_points, color, (x-1, 0), (0+2, 0))
+            PointsBar(max_points, color, (0, 0), (0, y - 1 - 2)),
+            PointsBar(max_points, color, (0, y - 1), (x - 1 - 2, y - 1)),
+            PointsBar(max_points, color, (x - 1, y - 1), (x - 1, 0 + 2)),
+            PointsBar(max_points, color, (x - 1, 0), (0 + 2, 0))
         ]
         color = CatchColors2P.P2_color
         self._P2_points_bars = [
-            PointsBar(max_points, color, (0+1, 0), (0+1, y-1-2)),
-            PointsBar(max_points, color, (0, y-1-1), (x-1-2, y-1-1)),
-            PointsBar(max_points, color, (x-1-1, y), (x-1-1, 0+2)),
-            PointsBar(max_points, color, (x-1, 0+1), (+2, 0+1)),
+            PointsBar(max_points, color, (0 + 1, 0), (0 + 1, y - 1 - 2)),
+            PointsBar(max_points, color, (0, y - 1 - 1), (x - 1 - 2, y - 1 - 1)),
+            PointsBar(max_points, color, (x - 1 - 1, y), (x - 1 - 1, 0 + 2)),
+            PointsBar(max_points, color, (x - 1, 0 + 1), (+2, 0 + 1)),
         ]
 
         self._reset_game()
@@ -90,7 +90,7 @@ class CatchColors2P(game.Game):
 
     def draw(self, ctx):
         if self._state == CatchColors2P.State.finished:
-            #Show winner color
+            # Show winner color
             if self._P1_points == CatchColors2P.max_points:
                 color = CatchColors2P.P1_color
             elif self._P2_points == CatchColors2P.max_points:
@@ -100,7 +100,7 @@ class CatchColors2P(game.Game):
             ctx.set_source_rgba(color)
             ctx.paint()
         else:
-            #Clear Background
+            # Clear Background
             ctx.set_source_rgb(0, 0, 0)
             ctx.paint()
 
@@ -111,12 +111,14 @@ class CatchColors2P(game.Game):
                 bar.draw(ctx)
 
     def _reset_symbols(self):
-        #P1 Symbol
+        # P1 Symbol
         board_id, x, y = random.choice(self._board_assignment)
-        self._P1_symbol = Symbol(center_x=x * 10 + 5, center_y=y * 10 + 5, board_id=board_id, color=CatchColors2P.P1_color)
+        self._P1_symbol = Symbol(center_x=x * 10 + 5, center_y=y * 10 + 5, board_id=board_id,
+                                 color=CatchColors2P.P1_color)
         #P2 Symbol
         board_id, x, y = random.choice(self._board_assignment)
-        self._P2_symbol = Symbol(center_x=x * 10 + 5, center_y=y * 10 + 5, board_id=board_id, color=CatchColors2P.P2_color)
+        self._P2_symbol = Symbol(center_x=x * 10 + 5, center_y=y * 10 + 5, board_id=board_id,
+                                 color=CatchColors2P.P2_color)
 
 
 class PointsBar():
@@ -129,7 +131,7 @@ class PointsBar():
 
     @property
     def _curr_point(self):
-        length = self.points/self._max_points  # how much points relative to max
+        length = self.points / self._max_points  # how much points relative to max
         diff = map(sub, self._end_point, self._start_point)
         vect = [coord * length for coord in diff]
         return map(add, self._start_point, vect)
@@ -144,7 +146,7 @@ class PointsBar():
         p2 = list(p2)
         # Cairo draws sharp lines only if coordinates are aligned to half values
         if p1[0] == p2[0]:
-            #Vertical line:
+            # Vertical line:
             p1[0] += 0.5
             p2[0] += 0.5
             if p1[1] < p2[1]:
@@ -152,7 +154,7 @@ class PointsBar():
             else:
                 p1[1] += 1
         elif p1[1] == p2[1]:
-            #Horizontal line:
+            # Horizontal line:
             p1[1] += 0.5
             p2[1] += 0.5
             if p1[0] < p2[0]:
@@ -197,7 +199,7 @@ class CatchColors(game.Game):
             pass
 
     def draw(self, ctx):
-        #Clear Background
+        # Clear Background
         ctx.set_source_rgb(0, 0, 0)
         ctx.paint()
 
@@ -235,16 +237,16 @@ class FadingSymbol(Symbol):
 
     @property
     def age(self):
-        return time.time()-self.born
+        return time.time() - self.born
 
     @property
     def is_alive(self):
         return self.age <= FadingSymbol.lifetime
 
     def draw(self, ctx):
-        weight = min(1, self.age/FadingSymbol.change_period)
+        weight = min(1, self.age / FadingSymbol.change_period)
         self.color = tuple(
-            sum(map(mul, x, (1-weight, weight))) for x in zip(FadingSymbol.color_start, FadingSymbol.color_end)
+            sum(map(mul, x, (1 - weight, weight))) for x in zip(FadingSymbol.color_start, FadingSymbol.color_end)
         )
         super().draw(ctx)
 

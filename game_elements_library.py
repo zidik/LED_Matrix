@@ -1,6 +1,5 @@
 __author__ = 'Mark'
 
-from enum import Enum
 import time
 import math
 from threading import Thread
@@ -202,7 +201,7 @@ class Moving():
 
 
 class Ball(Circle, Moving):
-    #Default values (prior loading config file)
+    # Default values (prior loading config file)
     stroke_color = (0, 0, 1, 1)
     fill_color = (0, 0, 0, 1)
     radius = 1.5
@@ -216,12 +215,12 @@ class Ball(Circle, Moving):
         self.fill_pattern = cairo.SolidPattern(*Ball.fill_color)
 
     def step(self):
-        last_bounding_box = Rectangle(self.left-1, self.top-1, 2*self.radius+2, 2*self.radius+2)
+        last_bounding_box = Rectangle(self.left - 1, self.top - 1, 2 * self.radius + 2, 2 * self.radius + 2)
 
         self.center_x += self.speed_x
         self.center_y += self.speed_y
 
-        new_bounding_box = Rectangle(self.left-1, self.top-1, 2*self.radius+2, 2*self.radius+2)
+        new_bounding_box = Rectangle(self.left - 1, self.top - 1, 2 * self.radius + 2, 2 * self.radius + 2)
         dirty_area = last_bounding_box.union(new_bounding_box)
         return dirty_area
 
@@ -274,9 +273,9 @@ class Paddle(Rectangle):
         """
         blink_period = 0.4
         if show_current:
-            self.gradient_pos = 1 - (health-1)/(max_health-1)
+            self.gradient_pos = 1 - (health - 1) / (max_health - 1)
 
-            #Invalidate whole area so it will be redrawn
+            # Invalidate whole area so it will be redrawn
             self._invalidate_rect(Rectangle(self.left, self.top, self.width, self.height))
 
             if blink_count <= 0:
@@ -284,13 +283,13 @@ class Paddle(Rectangle):
 
             Thread(
                 target=delayed_function_call,
-                args=(blink_period/2, self._blink_health, [health, max_health, blink_count-1, False])
+                args=(blink_period / 2, self._blink_health, [health, max_health, blink_count - 1, False])
             ).start()
         else:
-            self.gradient_pos = 1 - health/(max_health-1)
+            self.gradient_pos = 1 - health / (max_health - 1)
             Thread(
                 target=delayed_function_call,
-                args=(blink_period/2, self._blink_health, [health, max_health, blink_count])
+                args=(blink_period / 2, self._blink_health, [health, max_health, blink_count])
             ).start()
 
     def set_position(self, position):
@@ -305,7 +304,7 @@ class Paddle(Rectangle):
         delta = self.target_position - self.center_x
         if abs(delta) > 0:
             last_bounding_box = Rectangle(self.left, self.top, self.width, self.height)
-            #move accordingly (limited by speed)
+            # move accordingly (limited by speed)
             self.center_x += clamp(delta, -self.speed, self.speed)
             new_bounding_box = Rectangle(self.left, self.top, self.width, self.height)
             invalidated_area = last_bounding_box.union(new_bounding_box)
@@ -330,11 +329,11 @@ class Paddle(Rectangle):
             limited = True
 
         if limited:
-            #Stop
+            # Stop
             self.target_position = self.center_x
 
     def draw(self, cr):
-        #Calculate Path
+        # Calculate Path
         y = self.center_y
         r = self.height / 2 - 0.5
         x = self.left + self.height / 2
@@ -387,7 +386,7 @@ def collide_ball_to_paddle(ball, paddle):
     assert (isinstance(ball, Ball))
     heading_delta = 0.1  # change of heading of the ball on hitting edges of the paddle
     if paddle.intersection(ball):
-        #put ball back on the board
+        # put ball back on the board
         if paddle.flipped:
             ball.top = paddle.bottom
         else:

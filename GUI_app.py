@@ -8,7 +8,8 @@ from PIL import ImageTk
 
 from fpsManager import FpsManager
 from game_controller import GameController
-from matrix_controller import MatrixController, BoardButton
+from matrix_controller import MatrixController
+
 
 class GUIapp:
     def __init__(self, master, game_controller):
@@ -62,12 +63,12 @@ class GUIapp:
             override_keys = [
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
             ]
-        if mode == GameController.Mode.animation or\
-            mode == GameController.Mode.catch_colors or\
-            mode == GameController.Mode.catch_colors_2P:
+        if mode == GameController.Mode.animation or \
+                        mode == GameController.Mode.catch_colors or \
+                        mode == GameController.Mode.catch_colors_2P:
             override_keys = [
                 '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
-                'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+                                                             'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö',
                 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'
             ]

@@ -40,7 +40,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
             # if self.path.endswith(".jpg"):
             # mime_type = 'image/jpg'
             # if self.path.endswith(".gif"):
-            #     mime_type = 'image/gif'
+            # mime_type = 'image/gif'
             elif self.path.endswith(".js"):
                 mime_type = 'application/javascript'
             elif self.path.endswith(".css"):
@@ -56,13 +56,13 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
             except IOError:
                 self.send_error(404, "File Not Found: {}".format(self.path))
 
-            #Successful
+            # Successful
             self.send_response(200)
             self.send_header("Content-type", mime_type)
             self.end_headers()
             self.wfile.write(response.encode("utf-8"))
         except Exception as e:
-            #Unsuccessful
+            # Unsuccessful
             logging.exception("Handling GET request produced exception.")
             self.send_response(200)
             self.send_header("Content-type", "text/html")
@@ -81,13 +81,13 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 raise ValueError("Unexpected POST path: '{}'.".format(self.path))
 
-            #Successful
+            # Successful
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
             self.wfile.write(response.encode("utf-8"))
         except Exception as e:
-            #Unsuccessful
+            # Unsuccessful
             logging.exception("Handling POST request produced exception.")
             self.send_response(200)
             self.send_header("Content-type", "text/html")

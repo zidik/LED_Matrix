@@ -25,7 +25,7 @@ class LogoBounce(game.Game):
         collide_to_bottom_wall(self.logo, self.field_dims[1])
 
     def draw(self, context):
-        #Clear Background
+        # Clear Background
         context.set_source_rgb(0, 0, 0)
         context.paint()
         self.logo.draw(context)
@@ -48,7 +48,6 @@ class Logo(Rectangle, Moving):
         self.center_y += self.speed_y
 
     def draw(self, ctx):
-
         # scale image and add it
         ctx.save()
         ctx.translate(self.left, self.top)

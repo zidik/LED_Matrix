@@ -22,16 +22,16 @@ function ajaxPOST(target_page, content_type, values) {
 }
 
 
-function togglePower(item){
+function togglePower(item) {
     toggleState(item);
-    ajaxPOST(item.form.action, 'application/x-www-form-urlencoded', item.name+'='+item.className);
+    ajaxPOST(item.form.action, 'application/x-www-form-urlencoded', item.name + '=' + item.className);
 }
-function toggleState(item){
-    if(item.className == "on") {
+function toggleState(item) {
+    if (item.className == "on") {
         item.className = "off";
         item.value = "Off";
     } else {
-        item.className="on";
+        item.className = "on";
         item.value = "On";
     }
 }

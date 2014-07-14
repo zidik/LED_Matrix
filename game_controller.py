@@ -76,16 +76,16 @@ class GameController:
         self.matrix_controller.buttons = []
         assert isinstance(game, Pong)
         for i in range(10):
-            #P2 buttons
+            # P2 buttons
             self.matrix_controller.add_button(
-                board_id=128+i,
+                board_id=128 + i,
                 function=game.button_pressed,
                 args=[2, i]
             )
         for i in range(10):
-            #P1 buttons
+            # P1 buttons
             self.matrix_controller.add_button(
-                board_id=128+90+i,
+                board_id=128 + 90 + i,
                 function=game.button_pressed,
                 args=[1, i]
             )
@@ -95,7 +95,7 @@ class GameController:
         assert isinstance(game, Breaker)
         for i in range(10):
             self.matrix_controller.add_button(
-                board_id=128+90+i,
+                board_id=128 + 90 + i,
                 function=game.button_pressed,
                 args=[i]
             )
@@ -104,7 +104,7 @@ class GameController:
         self.matrix_controller.buttons = []
         for i in range(100):
             self.matrix_controller.add_button(
-                board_id=128+i,
+                board_id=128 + i,
                 function=game.button_pressed,
-                args=[128+i]
+                args=[128 + i]
             )

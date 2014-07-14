@@ -2,7 +2,7 @@ __author__ = 'Mark Laane'
 
 # Python 3.4.0
 # PySerial 2.7
-#Numpy 1.8.1
+# Numpy 1.8.1
 #Pillow 2.4.0
 
 import tkinter
@@ -13,12 +13,7 @@ from GUI_app import GUIapp
 from matrix_controller import MatrixController
 from game_controller import GameController
 from webserver import MatrixWebserver
-
 from configure import configure_all
-
-
-
-
 
 
 def main():
@@ -77,7 +72,6 @@ def main():
     matrix_controller.stop()
     logging.info("Stopped.")
     ### END
-
 
 
 if __name__ == '__main__':

@@ -7,7 +7,6 @@ from breaker import Breaker
 from pong import Pong
 
 
-
 def configure_all(config):
     conf_matrix(config["Matrix"])
     conf_ball(config["Ball"])
@@ -32,6 +31,7 @@ def conf_matrix(conf):
     MatrixController.serial_ports = csv_to_int_list(conf["Serial ports"])
     MatrixController.data_update_FPS = float(conf["Data Update FPS"])
     MatrixController.sensor_update_FPS = float(conf["Serial Update FPS"])
+
 
 def conf_ball(conf):
     Ball.radius = float(conf["Radius"])

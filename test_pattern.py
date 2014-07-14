@@ -58,7 +58,7 @@ class TestPattern(game.Game):
                 ctx.fill()
 
                 # ctx.set_source_rgba(0, 0, 0, 1)
-                #ctx.stroke()
+                # ctx.stroke()
 
                 ctx.move_to(10 * board.column, 10 * board.row + 8)
                 ctx.set_source(self.font_pat)

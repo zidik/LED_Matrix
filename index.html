@@ -3,36 +3,51 @@
     <title> test </title>
     <script src="ajax.js"></script>
     <style type="text/css">
-        div{
+        div {
             border: 1px solid #666;
         }
-        #wrapper{
+
+        #wrapper {
             display: inline-block;
-            clear:both;
+            clear: both;
         }
-        #server_response{
+
+        #server_response {
             min-height: 30px;
         }
-        label { display: inline-block; width: 120px; text-align: right; }
-        input[type="button"]{
+
+        label {
+            display: inline-block;
+            width: 120px;
+            text-align: right;
+        }
+
+        input[type="button"] {
             border: 1px solid #666;
         }
-        .on  { background:GreenYellow; }
-        .off { background:Tomato; }
+
+        .on {
+            background: GreenYellow;
+        }
+
+        .off {
+            background: Tomato;
+        }
     </style>
 </head>
 <body>
 <h1> Interactive Floor </h1>
+
 <div id="wrapper">
     <form action="power_toggle" method="post">
         <label for="power_button">Power:</label>
-        <input type="button" id="power_button" name="power" value="On" class="on" onclick="togglePower(this)" />
+        <input type="button" id="power_button" name="power" value="On" class="on" onclick="togglePower(this)"/>
     </form>
     <form action="mode_change" method="post">
         <label for="mode_select">Mode:</label>
         <select name="mode" id="mode_select"
                 onchange="ajaxPOST(this.form.action, 'application/x-www-form-urlencoded', this.name+'='+this.value)">
-            <option value="nothing" selected> - - - </option>
+            <option value="nothing" selected> - - -</option>
             <option value="pong">Pong</option>
             <option value="breaker">Brick breaker</option>
             <option value="animation">Animation</option>
@@ -50,6 +65,7 @@
     </form>
 </div>
 <h2>Server response:</h2>
+
 <div id="server_response">
 </div>
 </body>
