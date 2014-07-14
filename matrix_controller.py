@@ -7,8 +7,6 @@ import time
 import serial
 import numpy
 
-
-
 # "Cairocffi" could be also installed as "cairo"
 try:
     import cairocffi as cairo
@@ -23,13 +21,15 @@ from timer import Timer
 class MatrixController:
     data_update_FPS = 25
     sensor_update_FPS = 25
-    serial_ports = []
+    serial_ports = []       # List of serial port identifiers
+
+    dimensions = 10, 10     # Number of boards in X and Y axis
 
     def __init__(self):
         self.data_update_callback = None
         self.game = None
         # TODO - bug here if dims don't match
-        self.surface_dims = 100, 100
+        self.surface_dims = MatrixController.dimensions[0]*10, MatrixController.dimensions[1]*10
         self.fps = dict(Game=FpsManager(), Sensor=FpsManager())
         self._stop = threading.Event()
         self.threads = []
@@ -40,7 +40,7 @@ class MatrixController:
         self.context = cairo.Context(self.surface)
         # Numpy array of data displayed on floor and GUI
         # Image from Cairo surface is copied into this buffer every frame
-        self.displayed_data = numpy.zeros((self.surface_dims[0], self.surface_dims[1], 3), dtype=numpy.uint8)
+        self.displayed_data = numpy.zeros((self.surface_dims[1], self.surface_dims[0], 3), dtype=numpy.uint8)
 
         self._assign_boards()
 
@@ -48,8 +48,8 @@ class MatrixController:
 
     @staticmethod
     def _assign_boards():
-        for y in range(10):
-            for x in range(10):
+        for y in range(MatrixController.dimensions[1]):
+            for x in range(MatrixController.dimensions[0]):
                 BoardBus.add_assignation(128 + 10 * y + x, x, y)
 
     def start(self):
@@ -126,7 +126,10 @@ class MatrixController:
                 # Poll buttons -> this will call associated functions when buttons are pressed.
                 for button in self.buttons:
                     assert isinstance(button, BoardButton)
-                    button.poll()
+                    try:
+                        button.poll()
+                    except ValueError as e:
+                        logging.warning("{}".format(e))
 
                 # # UPDATE
                 if self.game is not None:
@@ -143,7 +146,7 @@ class MatrixController:
                         self.surface.flush()
                         buf = self.surface.get_data()
                         a = numpy.frombuffer(buf, numpy.uint8)
-                        a.shape = (self.surface_dims[0], self.surface_dims[1], 4)
+                        a.shape = (self.surface_dims[1], self.surface_dims[0], 4)
                         # Strip Alpha values and copy to our main numpy array
                         # also switch BGR to RGB
                         numpy.copyto(self.displayed_data[:, :, 0], a[:, :, 2])
@@ -155,6 +158,7 @@ class MatrixController:
 
                 self._signal_update_boards()
                 if self.data_update_callback is not None:
+                    # noinspection PyCallingNonCallable
                     self.data_update_callback()  # signal caller (GUI for example)
                 self.fps["Game"].cycle_complete()
 
