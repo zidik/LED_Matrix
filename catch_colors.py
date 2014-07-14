@@ -22,7 +22,6 @@ class CatchColors2P(game.Game):
         running = 1
         finished = 2
 
-
     max_points = 21
     P1_color = (0.0, 1.0, 0.0, 1.0)
     P2_color = (0.0, 0.0, 1.0, 1.0)
@@ -187,6 +186,9 @@ class CatchColors(game.Game):
 
         :param board_id: number of the board-button pressed.
         """
+        if self._symbol is None:
+            return
+
         if self._symbol.board_id == board_id:
             self._new_symbol()
 
