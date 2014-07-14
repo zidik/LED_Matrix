@@ -22,7 +22,7 @@ class GUIapp:
 
         self.master = master
         self.frame = tkinter.Frame(self.master, width=600, height=400)
-        self.frame.pack()  # (fill=tkinter.BOTH, expand=1) TODO?
+        self.frame.pack()
         self.canvas = tkinter.Canvas(self.frame, width=self.canvas_dims[0], height=self.canvas_dims[1])
         self.canvas.pack()
 
@@ -64,8 +64,8 @@ class GUIapp:
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
             ]
         if mode == GameController.Mode.animation or \
-                        mode == GameController.Mode.catch_colors or \
-                        mode == GameController.Mode.catch_colors_2P:
+                mode == GameController.Mode.catch_colors or \
+                mode == GameController.Mode.catch_colors_2P:
             override_keys = [
                 '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
                                                              'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',

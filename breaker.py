@@ -118,7 +118,6 @@ class Breaker(game.Game):
         display_redraw = True
         #####################
 
-
         not_redrawn = self.balls + [self.paddle] + self.bricks  # Elements that will not be redrawn
         redrawn = []  # Elements that will be redrawn
 

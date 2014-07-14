@@ -72,13 +72,14 @@ class BoardBus(threading.Thread):
                 continue
 
             # ##### SENDING PART  #####
-            # TODO: IS this a bug? - program might get stuck here and not recieve data from bus if nothing is sent.
-            # TODO: Maybe add timeout
+            # TODO: IS this a bug? - program might get stuck here and not receive data from bus if nothing is sent.
+            # TODO: Maybe add timeout - how long should it be?
             if self._change_in_flags.wait():  # Wait until something happens
                 self._change_in_flags.clear()
 
                 if self._update_display_flag:
-                    self._update_display_flag = False  # TODO: TEST with this commented (possible bug seen wit one board)
+                    # TODO: TEST with next line commented (possible bug seen with one board)
+                    self._update_display_flag = False
                     self._refresh_leds()  # If given, update image on boards
                     self.fps["LED update"].cycle_complete()
 

@@ -316,7 +316,6 @@ class Paddle(Rectangle):
         else:
             self.invalidated_area.union_ip(rect)
 
-
     def limit(self, limit):
         limited = False
 

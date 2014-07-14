@@ -27,7 +27,7 @@ class Animation(game.Game):
 
     def draw(self, ctx):
         # Clear Background
-        ctx.set_source_rgba(0, 0, 0, 0.2)  #Alpha 0.2 to introduce "delay" or "fade"
+        ctx.set_source_rgba(0, 0, 0, 0.2)  # Alpha 0.2 to introduce "delay" or "fade"
         ctx.paint()
 
         for circle in self.expanding_circles:
@@ -61,6 +61,7 @@ class ExpandingCircle(Circle):
         self.radius += 1
         if self.radius > self.final_radius:
             self.dead = True
+
 
     def draw(self, cairo_context):
         if self.dead:

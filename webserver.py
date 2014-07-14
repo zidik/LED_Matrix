@@ -33,6 +33,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             response = ""
             if self.path == "/":
+                # noinspection PyAttributeOutsideInit
                 self.path = "index.html"
 
             if self.path.endswith(".html"):
