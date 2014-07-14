@@ -20,8 +20,11 @@ from timer import Timer
 
 
 class MatrixController:
-    def __init__(self, serial_ports):
-        self.serial_ports = serial_ports
+    data_update_FPS = 25
+    sensor_update_FPS = 25
+    serial_ports = []
+
+    def __init__(self):
         self.data_update_callback = None
         self.game = None
         # TODO - bug here if dims don't match
@@ -38,23 +41,27 @@ class MatrixController:
         #Image from Cairo surface is copied into this buffer every frame
         self.displayed_data = numpy.zeros((self.surface_dims[0], self.surface_dims[1], 3), dtype=numpy.uint8)
 
-        self.assign_boards()
+        self._assign_boards()
 
         self.start()
 
-
-
     @staticmethod
-    def assign_boards():
+    def _assign_boards():
         for y in range(10):
             for x in range(10):
                 BoardBus.add_assignation(128 + 10 * y + x, x, y)
 
     def start(self):
+        """
+        Connects to serial ports, creates BoardBus for each port and starts it's thread
+        Creates and starts Data Update thread - runs the game loop
+        Creates and starts Sensor Refrsh thread - polls sensors for valies
+        Finally pings all boards on all buses for enumeration
+        """
         self.board_buses = []
         self.threads = []
 
-        for port in self.serial_ports:
+        for port in MatrixController.serial_ports:
             try:
                 connection = serial.Serial(port=port, baudrate=500000, writeTimeout=0)
                 new_bus = BoardBus(connection, self.displayed_data)
@@ -63,7 +70,7 @@ class MatrixController:
             except serial.SerialException:
                 logging.exception("Unable to open serial port")
 
-        # GameLoop - updates data for displaying
+        # Data Update (Game Loop) - updates data for displaying
         t = threading.Thread(target=self.update_data, name="DataUpd Thread")
         self.threads.append(t)
 
@@ -83,6 +90,10 @@ class MatrixController:
             bus.broadcast_board.ping()
 
     def stop(self):
+        """
+        Stops all child-threads
+        Closes serial ports
+        """
         logging.debug("Signalling matrix controller threads to stop")
         self._stop.set()
         for thread in self.threads:
@@ -97,9 +108,11 @@ class MatrixController:
             connection.close()
         logging.debug("Serial ports closed")
 
-    # noinspection PyTypeChecker
     def update_data(self):
-        fps = 25
+        """
+        Loop that advances the game/animation
+        """
+        fps = MatrixController.data_update_FPS
         update_period = 1.0/fps
 
         next_update = time.time()
@@ -140,7 +153,7 @@ class MatrixController:
 
                 ##UPDATE END
 
-                self.signal_update_boards()
+                self._signal_update_boards()
                 if self.data_update_callback is not None:
                     self.data_update_callback()  # signal caller (GUI for example)
                 self.fps["Game"].cycle_complete()
@@ -182,11 +195,13 @@ class MatrixController:
                     )
                 )
 
-
         logging.debug("Thread \"{}\" stopped".format(threading.current_thread().name))
 
     def refresh_sensor_data(self):
-        fps = 25
+        """
+        Loop that polls sensor data from boards
+        """
+        fps = MatrixController.sensor_update_FPS
         next_update = time.time()
 
         while not self._stop.isSet() and fps != 0:
@@ -200,7 +215,10 @@ class MatrixController:
 
         logging.debug("Thread \"{}\" stopped".format(threading.current_thread().name))
 
-    def signal_update_boards(self):
+    def _signal_update_boards(self):
+        """
+        Signals all buses to refresh data displayed on boards
+        """
         for bus in self.board_buses:
             bus.refresh_leds()
 
@@ -210,9 +228,12 @@ class MatrixController:
         )
 
     def connect(self, event_name, update_gui):
+        """
+        connect function to an event.
+        """
+        #If data gets updated, data_update_callback will be called
         if event_name == "data_update":
             self.data_update_callback = update_gui
-
 
 
 class BoardButton:

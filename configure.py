@@ -1,12 +1,15 @@
 __author__ = 'Mark'
 
+from matrix_controller import MatrixController
 from game_elements_library import Ball, Paddle
 from catch_colors import FadingSymbol
 from breaker import Breaker
 from pong import Pong
 
 
+
 def configure_all(config):
+    conf_matrix(config["Matrix"])
     conf_ball(config["Ball"])
     conf_paddle(config["Paddle"])
     conf_pong(config["Pong"])
@@ -24,6 +27,11 @@ def csv_to_int_list(csv_string):
 def csv_to_float_list(color_string):
     return [float(x.strip()) for x in color_string.split(',')]
 
+
+def conf_matrix(conf):
+    MatrixController.serial_ports = csv_to_int_list(conf["Serial ports"])
+    MatrixController.data_update_FPS = float(conf["Data Update FPS"])
+    MatrixController.sensor_update_FPS = float(conf["Serial Update FPS"])
 
 def conf_ball(conf):
     Ball.radius = float(conf["Radius"])
