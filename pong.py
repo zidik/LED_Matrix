@@ -100,11 +100,15 @@ class Pong(game.Game):
                     thread = Thread(target=delayed_function_call, args=(5, self._reset_game))
                     thread.start()
 
-    def draw(self, cairo_context):
+    def draw(self, ctx):
+        #Clear Background
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.paint()
+
         if self._ball is not None:
-            self._ball.draw(cairo_context)
-        self._p1_paddle.draw(cairo_context)
-        self._p2_paddle.draw(cairo_context)
+            self._ball.draw(ctx)
+        self._p1_paddle.draw(ctx)
+        self._p2_paddle.draw(ctx)
 
     def _reset_game(self):
         self._state = Pong.State.starting_delay

@@ -1,8 +1,6 @@
 __author__ = 'Mark'
 
 import game
-from PIL import Image
-import array
 
 # "Cairocffi" could be also installed as "cairo"
 try:
@@ -27,25 +25,15 @@ class LogoBounce(game.Game):
         collide_to_bottom_wall(self.logo, self.field_dims[1])
 
     def draw(self, context):
+        #Clear Background
+        context.set_source_rgb(0, 0, 0)
+        context.paint()
         self.logo.draw(context)
 
 
 class Logo(Rectangle, Moving):
     def __init__(self, image, left, top, width, height, speed, heading):
-        temp_surface = cairo.ImageSurface.create_from_png(image)
-        #Cairo loads PNG in wrong format - we correct this with PIL
-        temp_im = Image.frombuffer(
-            'RGBA',
-            (temp_surface.get_width(), temp_surface.get_height()),
-            bytes(temp_surface.get_data()),
-            'raw', 'BGRA', 0, 1
-        )
-        self.logo_surface = cairo.ImageSurface.create_for_data(
-            array.array('B', temp_im.tostring()),
-            cairo.FORMAT_ARGB32,
-            temp_surface.get_width(), temp_surface.get_height()
-        )
-
+        self.logo_surface = cairo.ImageSurface.create_from_png(image)
         super().__init__(left, top, width, height)
         self.speed = speed
         self.heading = heading
