@@ -13,24 +13,20 @@ except ImportError:
 
 
 class Player:
-    class State(Enum):
-        alive = 0
-        dead = 1
-
     def __init__(self, max_hp=4):
         self.max_hp = max_hp
         self.hp = max_hp
-        self.state = Player.State.alive
 
     def reset(self):
         self.hp = self.max_hp
-        self.state = Player.State.alive
 
     def lose_hp(self):
         assert (self.hp > 0)
         self.hp -= 1
-        if self.hp <= 0:
-            self.state = Player.State.dead
+
+    @property
+    def is_alive(self):
+        return self.hp > 0
 
 
 class Rectangle():
@@ -219,10 +215,8 @@ class Ball(Circle, Moving):
         self.speed = speed
         self.heading = heading
 
-        r, g, b, a = Ball.stroke_color
-        self.stroke_pattern = cairo.SolidPattern(b, g, r, a)
-        r, g, b, a = Ball.fill_color
-        self.fill_pattern = cairo.SolidPattern(b, g, r, a)
+        self.stroke_pattern = cairo.SolidPattern(*Ball.stroke_color)
+        self.fill_pattern = cairo.SolidPattern(*Ball.fill_color)
 
     def step(self):
         last_bounding_box = Rectangle(self.left-1, self.top-1, 2*self.radius+2, 2*self.radius+2)
