@@ -2,31 +2,55 @@
 <head>
     <title> test </title>
     <script src="ajax.js"></script>
+    <style type="text/css">
+        div{
+            border: 1px solid #666;
+        }
+        #wrapper{
+            display: inline-block;
+            clear:both;
+        }
+        #server_response{
+            min-height: 30px;
+        }
+        label { display: inline-block; width: 120px; text-align: right; }
+        input[type="button"]{
+            border: 1px solid #666;
+        }
+        .on  { background:GreenYellow; }
+        .off { background:Tomato; }
+    </style>
 </head>
 <body>
-<p> Interactive Floor </p>
-
-<form action="control" method="post">
-    <label for="mode_select">Mode:</label>
-    <select name="mode" id="mode_select"
-            onchange="ajaxPOST('control','application/x-www-form-urlencoded','mode='+this.value)">
-        <option value="nothing" selected>Off</option>
-        <option value="pong">Pong</option>
-        <option value="breaker">Brick breaker</option>
-        <option value="animation">Animation</option>
-        <option value="logo">Logo</option>
-        <option value="catch_colors">Catch colors</option>
-        <option value="catch_colors_2P">Catch colors 2P</option>
-    </select>
-    <input type="submit" value="Go" id="mode_submit">
-</form>
-<form action="file_upload" method="post" enctype="multipart/form-data">
-    <label for="file_upload">Filename:</label>
-    <input type="file" name="uploaded_file" id="file_upload" accept=".png"><br>
-    <input type="submit" value="Submit">
-</form>
+<h1> Interactive Floor </h1>
+<div id="wrapper">
+    <form action="power_toggle" method="post">
+        <label for="power_button">Power:</label>
+        <input type="button" id="power_button" name="power" value="On" class="on" onclick="togglePower(this)" />
+    </form>
+    <form action="mode_change" method="post">
+        <label for="mode_select">Mode:</label>
+        <select name="mode" id="mode_select"
+                onchange="ajaxPOST(this.form.action, 'application/x-www-form-urlencoded', this.name+'='+this.value)">
+            <option value="nothing" selected> - - - </option>
+            <option value="pong">Pong</option>
+            <option value="breaker">Brick breaker</option>
+            <option value="animation">Animation</option>
+            <option value="logo">Logo</option>
+            <option value="catch_colors">Catch colors</option>
+            <option value="catch_colors_2P">Catch colors 2P</option>
+        </select>
+        <input type="submit" value="Go" id="mode_submit">
+    </form>
+    <form action="file_upload" method="post" enctype="multipart/form-data">
+        <label for="file_upload">Filename:</label>
+        <input type="file" name="uploaded_file" id="file_upload" accept=".png"><br>
+        <label for="send_file"> </label>
+        <input type="submit" id="send_file" value="Send File">
+    </form>
+</div>
+<h2>Server response:</h2>
 <div id="server_response">
-
 </div>
 </body>
 </html>

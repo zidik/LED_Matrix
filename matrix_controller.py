@@ -21,6 +21,7 @@ from timer import Timer
 
 class MatrixController:
     def __init__(self, serial_ports):
+        self.serial_ports = serial_ports
         self.data_update_callback = None
         self.game = None
         # TODO - bug here if dims don't match
@@ -39,38 +40,9 @@ class MatrixController:
 
         self.assign_boards()
 
-        self._create_buses(serial_ports)
+        self.start()
 
-        # GameLoop - updates data for displaying
-        t = threading.Thread(target=self.update_data, name="Game Thread")
-        self.threads.append(t)
 
-        #"Sensor Refresh"-Loop - updates sensor readings
-        t = threading.Thread(target=self.refresh_sensor_data, name="Sensor Thread")
-        self.threads.append(t)
-
-        #Start all threads
-        for thread in self.threads:
-            thread.start()
-
-        # Enumerate/ping boards
-        for bus in self.board_buses:
-            assert isinstance(bus, BoardBus)
-            bus.broadcast_board.ping()
-
-    def _create_buses(self, serial_ports):
-        serial_connections = []
-        for port in serial_ports:
-            try:
-                serial_connections.append(serial.Serial(port=port, baudrate=500000, writeTimeout=0))
-            except serial.SerialException:
-                logging.exception("Unable to open serial port")
-
-        # Create all buses
-        for connection in serial_connections:
-            new_bus = BoardBus(connection, self.displayed_data)
-            self.board_buses.append(new_bus)
-            self.threads.append(new_bus)
 
     @staticmethod
     def assign_boards():
@@ -78,12 +50,52 @@ class MatrixController:
             for x in range(10):
                 BoardBus.add_assignation(128 + 10 * y + x, x, y)
 
+    def start(self):
+        self.board_buses = []
+        self.threads = []
+
+        for port in self.serial_ports:
+            try:
+                connection = serial.Serial(port=port, baudrate=500000, writeTimeout=0)
+                new_bus = BoardBus(connection, self.displayed_data)
+                self.board_buses.append(new_bus)
+                self.threads.append(new_bus)
+            except serial.SerialException:
+                logging.exception("Unable to open serial port")
+
+        # GameLoop - updates data for displaying
+        t = threading.Thread(target=self.update_data, name="DataUpd Thread")
+        self.threads.append(t)
+
+        #"Sensor Refresh"-Loop - updates sensor readings
+        t = threading.Thread(target=self.refresh_sensor_data, name="Sensor Thread")
+        self.threads.append(t)
+
+        logging.debug("Starting matrix controller threads")
+        self._stop.clear()
+        for thread in self.threads:
+            thread.start()
+        logging.debug("Matrix controller threads started")
+
+        # Enumerate/ping boards
+        for bus in self.board_buses:
+            assert isinstance(bus, BoardBus)
+            bus.broadcast_board.ping()
+
     def stop(self):
         logging.debug("Signalling matrix controller threads to stop")
         self._stop.set()
         for thread in self.threads:
             thread.join()
         logging.debug("Matrix controller stopped")
+
+        logging.debug("Closing serial ports")
+        for bus in self.board_buses:
+            assert isinstance(bus, BoardBus)
+            connection = bus.serial_connection
+            assert isinstance(connection, serial.Serial)
+            connection.close()
+        logging.debug("Serial ports closed")
 
     # noinspection PyTypeChecker
     def update_data(self):

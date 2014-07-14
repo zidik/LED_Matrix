@@ -61,7 +61,7 @@ class BoardBus(threading.Thread):
 
     def run(self):
         logging.info(self.serial_connection.name + " serial update thread started up")
-
+        self._stop_flag = False
         while not self._stop_flag:  # while stop signal is not given
             # #### RECEIVING PART #####
             self._receive_data_from_bus()

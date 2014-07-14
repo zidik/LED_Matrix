@@ -7,8 +7,7 @@ function ajaxPOST(target_page, content_type, values) {
     if (window.XMLHttpRequest) {
         // code for IE7+, Firefox, Chrome, Opera, Safari
         xmlhttp = new XMLHttpRequest();
-    }
-    else {
+    } else {
         // code for IE6, IE5
         xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
     }
@@ -20,4 +19,19 @@ function ajaxPOST(target_page, content_type, values) {
     xmlhttp.open("POST", target_page, true);
     xmlhttp.setRequestHeader("Content-type", content_type);
     xmlhttp.send(values);
+}
+
+
+function togglePower(item){
+    toggleState(item);
+    ajaxPOST(item.form.action, 'application/x-www-form-urlencoded', item.name+'='+item.className);
+}
+function toggleState(item){
+    if(item.className == "on") {
+        item.className = "off";
+        item.value = "Off";
+    } else {
+        item.className="on";
+        item.value = "On";
+    }
 }
