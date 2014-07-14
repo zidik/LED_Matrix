@@ -25,9 +25,16 @@ class Breaker(game.Game):
     brick_columns = 6
     brick_rows = 4
 
+    init_ball_speed = 1.0
+    init_paddle_speed = 1.0
+    speed_change = 0.001
+
+    lives = 4
+
     multi_ball_probability = 0.1
 
     class State(Enum):
+        initialising = -1
         starting_delay = 0
         waiting_push = 1
         running = 2
@@ -35,13 +42,14 @@ class Breaker(game.Game):
 
     def __init__(self, field_dims):
         self.field_dims = field_dims
+
+        self._state = Breaker.State.initialising
         self.invalidated_areas = []
-        self.player = Player()
-        self.paddle = Paddle(0, self.field_dims[1] - 4)  # Paddle on the bottom
+        self.player = Player(Breaker.lives)
+        self.paddle = Paddle(0, self.field_dims[1] - 4, speed=Breaker.init_paddle_speed)  # Paddle on the bottom
         self.balls = []
         self.bricks = []
-        self._state = None
-        self.ball_speed = None  # Speed set for all current balls
+        self.ball_speed = Breaker.init_ball_speed  # Speed set for all current balls
 
         self._reset_game()
 
@@ -66,8 +74,8 @@ class Breaker(game.Game):
             return
 
         #Make game quicker
-        self.paddle.speed += 0.001
-        self.ball_speed += 0.001
+        self.paddle.speed += Breaker.speed_change
+        self.ball_speed += Breaker.speed_change
         for ball in self.balls:
             ball.speed = self.ball_speed
 
@@ -87,7 +95,7 @@ class Breaker(game.Game):
             if len(self.balls) == 0:
                 self.player.lose_hp()
                 self.paddle.set_health(self.player.hp, self.player.max_hp)
-                if self.player.state == Player.State.alive:
+                if self.player.is_alive:
                     Thread(target=delayed_function_call, args=(1, self._new_ball)).start()
                 else:
                     self._state = Breaker.State.finished

@@ -11,6 +11,13 @@ from game_elements_library import Player, Paddle, Ball, delayed_function_call, \
 
 
 class Pong(game.Game):
+
+    lives = 4
+
+    init_ball_speed = 0.1
+    init_paddle_speed = 0.1
+    speed_change = 0.001
+
     class State(Enum):
         starting_delay = 0
         waiting_push = 1
@@ -20,11 +27,11 @@ class Pong(game.Game):
     def __init__(self, field_dims):
         self._field_dims = field_dims
 
-        self._p1 = Player()
-        self._p2 = Player()
+        self._p1 = Player(Pong.lives)
+        self._p2 = Player(Pong.lives)
 
-        self._p1_paddle = Paddle(0, self._field_dims[1] - 4)  # Paddle on the bottom
-        self._p2_paddle = Paddle(0, 0, flipped=True)  # Paddle on the top
+        self._p1_paddle = Paddle(0, self._field_dims[1] - 4, speed=Pong.init_paddle_speed)  # Paddle on the bottom
+        self._p2_paddle = Paddle(0, 0, flipped=True, speed=Pong.init_paddle_speed)  # Paddle on the top
 
         self.ball_speed = 1
 
@@ -60,9 +67,9 @@ class Pong(game.Game):
             return
 
         #Make game quicker
-        self._p1_paddle.speed += 0.001
-        self._p2_paddle.speed += 0.001
-        self.ball_speed += 0.001
+        self._p1_paddle.speed += Pong.speed_change
+        self._p2_paddle.speed += Pong.speed_change
+        self.ball_speed += Pong.speed_change
 
         self._p1_paddle.step()
         self._p2_paddle.step()
@@ -81,10 +88,10 @@ class Pong(game.Game):
                     self._p1_paddle.set_health(self._p1.hp, self._p1.max_hp)
                 else:
                     self._p2_paddle.set_health(self._p2.hp, self._p2.max_hp)
-                if loser.state == Player.State.alive:
+                if loser.is_alive:
                     self._ball = None
                     #reduce ball speed 1/3'rd
-                    self.ball_speed = self.ball_speed/3*2
+                    #self.ball_speed = self.ball_speed/3*2
                     thread = Thread(target=delayed_function_call, args=(1, self._reset_ball, [loser]))
                     thread.start()
                 else:
