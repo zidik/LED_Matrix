@@ -13,24 +13,20 @@ except ImportError:
 
 
 class Player:
-    class State(Enum):
-        alive = 0
-        dead = 1
-
     def __init__(self, max_hp=4):
         self.max_hp = max_hp
         self.hp = max_hp
-        self.state = Player.State.alive
 
     def reset(self):
         self.hp = self.max_hp
-        self.state = Player.State.alive
 
     def lose_hp(self):
         assert (self.hp > 0)
         self.hp -= 1
-        if self.hp <= 0:
-            self.state = Player.State.dead
+
+    @property
+    def is_alive(self):
+        return self.hp > 0
 
 
 class Rectangle():
@@ -123,7 +119,6 @@ class Rectangle():
         return left, top, width, height
 
 
-
 class Circle():
     def __init__(self, center_x, center_y, radius):
         super().__init__()
@@ -168,10 +163,8 @@ class Brick(Rectangle):
     def __init__(self, x, y, width, height, colors):
         super().__init__(x, y, width, height)
         self.patterns = []
-        r, g, b, a = colors[0]
-        self.patterns.append(cairo.SolidPattern(b, g, r, a))
-        r, g, b, a = colors[1]
-        self.patterns.append(cairo.SolidPattern(b, g, r, a))
+        self.patterns.append(cairo.SolidPattern(*colors[0]))
+        self.patterns.append(cairo.SolidPattern(*colors[1]))
         self.broken = False
 
     def draw(self, ctx):
@@ -219,10 +212,8 @@ class Ball(Circle, Moving):
         self.speed = speed
         self.heading = heading
 
-        r, g, b, a = Ball.stroke_color
-        self.stroke_pattern = cairo.SolidPattern(b, g, r, a)
-        r, g, b, a = Ball.fill_color
-        self.fill_pattern = cairo.SolidPattern(b, g, r, a)
+        self.stroke_pattern = cairo.SolidPattern(*Ball.stroke_color)
+        self.fill_pattern = cairo.SolidPattern(*Ball.fill_color)
 
     def step(self):
         last_bounding_box = Rectangle(self.left-1, self.top-1, 2*self.radius+2, 2*self.radius+2)
@@ -233,7 +224,6 @@ class Ball(Circle, Moving):
         new_bounding_box = Rectangle(self.left-1, self.top-1, 2*self.radius+2, 2*self.radius+2)
         dirty_area = last_bounding_box.union(new_bounding_box)
         return dirty_area
-
 
     def draw(self, cairo_context):
         cairo_context.arc(self.center_x, self.center_y, self.radius, 0, 2 * math.pi)
@@ -343,7 +333,6 @@ class Paddle(Rectangle):
             #Stop
             self.target_position = self.center_x
 
-
     def draw(self, cr):
         #Calculate Path
         y = self.center_y
@@ -360,10 +349,9 @@ class Paddle(Rectangle):
             pat = cairo.LinearGradient(self.right + 1, 0.0, self.left - 1, 0)
         else:
             pat = cairo.LinearGradient(self.left - 1, 0.0, self.right + 1, 0)
-        r, g, b, a = Paddle.fill_color[1]
-        pat.add_color_stop_rgba(self.gradient_pos, b, g, r, a)
-        r, g, b, a = Paddle.fill_color[0]
-        pat.add_color_stop_rgba(self.gradient_pos, b, g, r, a)
+
+        pat.add_color_stop_rgba(self.gradient_pos, *Paddle.fill_color[1])
+        pat.add_color_stop_rgba(self.gradient_pos, *Paddle.fill_color[0])
         cr.set_source(pat)
 
         cr.fill_preserve()
@@ -373,10 +361,9 @@ class Paddle(Rectangle):
             pat = cairo.LinearGradient(self.right + 1, 0.0, self.left - 1, 0)
         else:
             pat = cairo.LinearGradient(self.left - 1, 0.0, self.right + 1, 0)
-        r, g, b, a = Paddle.stroke_color[1]
-        pat.add_color_stop_rgba(self.gradient_pos, b, g, r, a)
-        r, g, b, a = Paddle.stroke_color[0]
-        pat.add_color_stop_rgba(self.gradient_pos, b, g, r, a)
+
+        pat.add_color_stop_rgba(self.gradient_pos, *Paddle.stroke_color[1])
+        pat.add_color_stop_rgba(self.gradient_pos, *Paddle.stroke_color[0])
         cr.set_source(pat)
 
         cr.set_line_width(1)

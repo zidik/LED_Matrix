@@ -26,9 +26,13 @@ class Animation(game.Game):
             else:
                 circle.step()
 
-    def draw(self, context):
+    def draw(self, ctx):
+        #Clear Background
+        ctx.set_source_rgba(0, 0, 0, 0.2) #Alpha 0.2 to introduce "delay" or "fade"
+        ctx.paint()
+
         for circle in self.expanding_circles:
-            circle.draw(context)
+            circle.draw(ctx)
 
     def button_pressed(self, board_id):
         """
@@ -68,7 +72,7 @@ class ExpandingCircle(Circle):
         cairo_context.set_source(
             cairo.SolidPattern(
                 1, 1, 1,
-                1 - self.radius / self.final_radius
+                (1 - self.radius / self.final_radius)**4
             )
         )
         cairo_context.stroke()
