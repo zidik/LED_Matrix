@@ -1,8 +1,9 @@
 import math
 
-__author__ = 'Mark'
+from games import game
 
-import game
+
+__author__ = 'Mark'
 
 # "Cairocffi" could be also installed as "cairo"
 try:
@@ -10,7 +11,7 @@ try:
 except ImportError:
     import cairo
 
-from game_elements_library import Circle
+from games.game_elements_library import Circle
 
 
 class Animation(game.Game):

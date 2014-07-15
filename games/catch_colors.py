@@ -1,5 +1,8 @@
 import random
 
+from games import game
+
+
 __author__ = 'Mark'
 
 from operator import mul, sub, add
@@ -7,8 +10,7 @@ from enum import Enum
 from threading import Thread
 import math
 import time
-import game
-from game_elements_library import Circle, delayed_function_call
+from games.game_elements_library import Circle, delayed_function_call
 
 # "Cairocffi" could be also installed as "cairo"
 try:

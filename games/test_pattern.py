@@ -1,3 +1,5 @@
+from games import game
+
 __author__ = 'Mark'
 
 import math
@@ -7,8 +9,6 @@ try:
     import cairocffi as cairo
 except ImportError:
     import cairo
-
-import game
 
 
 class TestPattern(game.Game):

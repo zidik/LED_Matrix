@@ -1,10 +1,10 @@
 __author__ = 'Mark'
 
 from matrix_controller import MatrixController
-from game_elements_library import Ball, Paddle
-from catch_colors import FadingSymbol
-from breaker import Breaker
-from pong import Pong
+from games.game_elements_library import Ball, Paddle
+from games.catch_colors import FadingSymbol
+from games.breaker import Breaker
+from games.pong import Pong
 
 
 def configure_all(config):

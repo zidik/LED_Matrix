@@ -3,17 +3,12 @@ from enum import Enum
 import logging
 
 from board_bus import BoardBus
-from breaker import Breaker
-from pong import Pong
-from test_pattern import TestPattern
-from logo_bounce import LogoBounce
-from animation import Animation
-from catch_colors import CatchColors, CatchColors2P
+
+from games import Animation, Breaker, CatchColors, CatchColors2P, LogoBounce, Pong, TestPattern
 
 
 class GameController:
     class Mode(Enum):
-        nothing = -1
         test = 0
         pong = 1
         breaker = 2
@@ -29,10 +24,8 @@ class GameController:
     def set_game_mode(self, mode):
         logging.info("Game set to {}".format(mode))
         surface_dims = self.matrix_controller.surface_dims
-        if mode == GameController.Mode.nothing:
-            game = None
 
-        elif mode == GameController.Mode.test:
+        if mode == GameController.Mode.test:
             game = TestPattern(surface_dims, BoardBus.board_assignment, self.matrix_controller.board_buses)
 
         elif mode == GameController.Mode.pong:

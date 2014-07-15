@@ -1,6 +1,6 @@
-__author__ = 'Mark'
+from games import game
 
-import game
+__author__ = 'Mark'
 
 # "Cairocffi" could be also installed as "cairo"
 try:
@@ -8,7 +8,7 @@ try:
 except ImportError:
     import cairo
 
-from game_elements_library import Rectangle, Moving, \
+from games.game_elements_library import Rectangle, Moving, \
     collide_to_left_wall, collide_to_bottom_wall, collide_to_right_wall, collide_to_top_wall
 
 

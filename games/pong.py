@@ -1,3 +1,5 @@
+from games import game
+
 __author__ = 'Mark'
 
 import random
@@ -5,8 +7,7 @@ import math
 from threading import Thread
 from enum import Enum
 
-import game
-from game_elements_library import Player, Paddle, Ball, delayed_function_call, \
+from games.game_elements_library import Player, Paddle, Ball, delayed_function_call, \
     collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall
 
 

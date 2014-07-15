@@ -1,3 +1,5 @@
+from games import game
+
 __author__ = 'Mark'
 
 import math
@@ -11,8 +13,7 @@ try:
 except ImportError:
     import cairo
 
-import game
-from game_elements_library import Rectangle, Player, Paddle, Ball, Brick, delayed_function_call, \
+from games.game_elements_library import Rectangle, Player, Paddle, Ball, Brick, delayed_function_call, \
     collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall, collide_to_top_wall
 
 
