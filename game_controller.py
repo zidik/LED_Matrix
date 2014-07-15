@@ -3,7 +3,6 @@ from enum import Enum
 import logging
 
 from board_bus import BoardBus
-
 from games import Animation, Breaker, CatchColors, CatchColors2P, LogoBounce, Pong, TestPattern
 
 
