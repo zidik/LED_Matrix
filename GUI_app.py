@@ -75,10 +75,15 @@ class GUIapp:
                 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'
             ]
 
-        for button in self.matrix_controller.buttons:
-            if len(override_keys) == 0:
+
+        for i in range(len(self.matrix_controller.buttons)):
+            assert(self.matrix_controller.dimensions[0] <= 10)  # Next line will break otherwise
+            try:
+                self.matrix_controller.buttons[i].override_key = override_keys[
+                    i + i//self.matrix_controller.dimensions[0]*(10-self.matrix_controller.dimensions[0])
+                ]
+            except IndexError:
                 break
-            button.override_key = override_keys.pop(0)
 
     def update(self):
         self._data_updated = True
