@@ -45,7 +45,7 @@ class MatrixController:
     def _assign_boards():
         for y in range(MatrixController.dimensions[1]):
             for x in range(MatrixController.dimensions[0]):
-                BoardBus.add_assignation(128 + 10 * y + x, x, y)
+                BoardBus.add_assignation(128 + MatrixController.dimensions[0] * y + x, x, y)
 
     def start(self):
         """
