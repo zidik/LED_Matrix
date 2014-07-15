@@ -113,7 +113,7 @@ class Breaker(game.Game):
     def _draw(self, ctx, invalidated_rect):
         # ## DEBUG OPTIONS ###
         display_redraw = True
-        #####################
+        # ####################
 
         not_redrawn = self.balls + [self.paddle] + self.bricks  # Elements that will not be redrawn
         redrawn = []  # Elements that will be redrawn

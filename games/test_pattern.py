@@ -10,13 +10,13 @@ class TestPattern(game.Game):
         self.board_assignments = board_assignments
         self.board_buses = board_buses
 
-        self.connected_pat = cairo.LinearGradient(0.0, 0.0, 0.0, matrix_dims[1]*10)
+        self.connected_pat = cairo.LinearGradient(0.0, 0.0, 0.0, matrix_dims[1] * 10)
         for i in range(matrix_dims[1]):
             self.connected_pat.add_color_stop_rgba(i / matrix_dims[1], 0.0, 0.5
                                                    , 0.0, 1)
             self.connected_pat.add_color_stop_rgba((i + 1) / matrix_dims[1], 0, 0.2, 0, 1)
 
-        self.disconnected_pat = cairo.LinearGradient(0.0, 0.0, 0.0, matrix_dims[1]*10)
+        self.disconnected_pat = cairo.LinearGradient(0.0, 0.0, 0.0, matrix_dims[1] * 10)
         for i in range(matrix_dims[1]):
             self.disconnected_pat.add_color_stop_rgba(i / matrix_dims[1], 0, 0, 0.8, 1)
             self.disconnected_pat.add_color_stop_rgba((i + 1) / matrix_dims[1], 0, 0, 0.4, 1)
@@ -27,7 +27,7 @@ class TestPattern(game.Game):
         pass
 
     def draw(self, ctx):
-        #Clear
+        # Clear
         ctx.set_source_rgb(0, 0, 0)
         ctx.paint()
 

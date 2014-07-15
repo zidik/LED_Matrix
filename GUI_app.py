@@ -66,8 +66,8 @@ class GUIapp:
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
             ]
         if mode == GameController.Mode.animation or \
-                mode == GameController.Mode.catch_colors or \
-                mode == GameController.Mode.catch_colors_2P:
+                        mode == GameController.Mode.catch_colors or \
+                        mode == GameController.Mode.catch_colors_2P:
             override_keys = [
                 '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
                 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
@@ -75,12 +75,11 @@ class GUIapp:
                 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'
             ]
 
-
         for i in range(len(self.matrix_controller.buttons)):
-            assert(self.matrix_controller.dimensions[0] <= 10)  # Next line will break otherwise
+            assert (self.matrix_controller.dimensions[0] <= 10)  # Next line will break otherwise
             try:
                 self.matrix_controller.buttons[i].override_key = override_keys[
-                    i + i//self.matrix_controller.dimensions[0]*(10-self.matrix_controller.dimensions[0])
+                    i + i // self.matrix_controller.dimensions[0] * (10 - self.matrix_controller.dimensions[0])
                 ]
             except IndexError:
                 break

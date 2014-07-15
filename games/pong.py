@@ -90,7 +90,7 @@ class Pong(game.Game):
                     self._p2_paddle.set_health(self._p2.hp, self._p2.max_hp)
                 if loser.is_alive:
                     self._ball = None
-                    #reduce ball speed 1/3'rd
+                    # reduce ball speed 1/3'rd
                     #self.ball_speed = self.ball_speed/3*2
                     thread = Thread(target=delayed_function_call, args=(1, self._reset_ball, [loser]))
                     thread.start()

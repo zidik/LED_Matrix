@@ -58,9 +58,8 @@ class CatchColors2P(game.Game):
             in zip(CatchColors2P.player_colors, range(number_of_players))
         ]
 
-        #Used in resetting symbols to avoid boards/buttons, that are currently pressed
-        self.pressed_buttons_last_step = [] #Remember buttons pressed since last step
-
+        # Used in resetting symbols to avoid boards/buttons, that are currently pressed
+        self.pressed_buttons_last_step = []  #Remember buttons pressed since last step
 
         self._reset_game()
 
@@ -88,7 +87,7 @@ class CatchColors2P(game.Game):
                 continue
             if player.symbol.board_id == board_id:
                 player.points += 1
-                #Clear all player's symbols
+                # Clear all player's symbols
                 for p in self.players:
                     p.symbol = None
 
@@ -113,7 +112,7 @@ class CatchColors2P(game.Game):
                     ctx.paint()
         else:
             if self._state == CatchColors2P.State.finishing:
-                #This is here to ensure last frame of the game is also drawn before fading away to winner color
+                # This is here to ensure last frame of the game is also drawn before fading away to winner color
                 self._state = CatchColors2P.State.finished
             # Clear Background
             ctx.set_source_rgb(0, 0, 0)
@@ -160,7 +159,7 @@ class PointsBar():
     @property
     def _curr_length(self):
         diff = list(map(sub, self._end_point, self._start_point))  # Vector pointing from start point to endpoint
-        max_length = (diff[0]**2+diff[1]**2)**0.5
+        max_length = (diff[0] ** 2 + diff[1] ** 2) ** 0.5
         curr_length = max_length * (self.points / self._max_points)
         return curr_length
 
@@ -170,12 +169,12 @@ class PointsBar():
             if self._start_point[1] <= self._end_point[1]:
                 ctx.rectangle(self._start_point[0], self._start_point[1], self.width, int(self._curr_length))
             else:
-                ctx.rectangle(self._start_point[0], self._start_point[1]+1, self.width, -int(self._curr_length))
+                ctx.rectangle(self._start_point[0], self._start_point[1] + 1, self.width, -int(self._curr_length))
         elif self._start_point[1] == self._end_point[1]:
             if self._start_point[0] <= self._end_point[0]:
                 ctx.rectangle(self._start_point[0], self._start_point[1], int(self._curr_length), self.width)
             else:
-                ctx.rectangle(self._start_point[0]+1, self._start_point[1], -int(self._curr_length), self.width)
+                ctx.rectangle(self._start_point[0] + 1, self._start_point[1], -int(self._curr_length), self.width)
         else:
             raise ValueError("PointsBar has to be horizontal or vertical")
 

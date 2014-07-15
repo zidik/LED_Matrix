@@ -337,7 +337,7 @@ class Paddle(Rectangle):
         cr.arc(x, y, r, -math.pi / 2, math.pi / 2)
         cr.close_path()
 
-        #Fill
+        # Fill
         # Gradient background
         if self.flipped:
             pat = cairo.LinearGradient(self.right + 1, 0.0, self.left - 1, 0)

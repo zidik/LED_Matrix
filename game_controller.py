@@ -25,7 +25,7 @@ class GameController:
     def set_game_mode(self, mode):
         logging.info("Game set to {}".format(mode))
         surface_dims = self.matrix_controller.surface_dims  # Floor dimensions in pixels
-        matrix_dims = self.matrix_controller.dimensions     # Floor dimensions in boards
+        matrix_dims = self.matrix_controller.dimensions  # Floor dimensions in boards
 
         if mode == GameController.Mode.test:
             game = TestPattern(matrix_dims, BoardBus.board_assignment, self.matrix_controller.board_buses)

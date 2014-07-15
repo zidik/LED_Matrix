@@ -16,15 +16,15 @@ from timer import Timer
 class MatrixController:
     data_update_FPS = 25
     sensor_update_FPS = 25
-    serial_ports = []       # List of serial port identifiers
+    serial_ports = []  # List of serial port identifiers
 
-    dimensions = 10, 10     # Number of boards in X and Y axis
+    dimensions = 10, 10  # Number of boards in X and Y axis
 
     def __init__(self):
         self.data_update_callback = None
         self.game = None
         # TODO - bug here if dims don't match
-        self.surface_dims = MatrixController.dimensions[0]*10, MatrixController.dimensions[1]*10
+        self.surface_dims = MatrixController.dimensions[0] * 10, MatrixController.dimensions[1] * 10
         self.fps = dict(Game=FpsManager(), Sensor=FpsManager())
         self._stop = threading.Event()
         self.threads = []
@@ -163,7 +163,7 @@ class MatrixController:
                 skipped_frames = 0
                 while sleep_time < 0:
                     with Timer() as t5:
-                        #SKIP FRAMES!
+                        # SKIP FRAMES!
                         if self.game is not None:
                             self.game.step()
                         next_update += update_period
@@ -171,7 +171,7 @@ class MatrixController:
                         skipped_frames += 1
                     results[5] += t5.milliseconds
                 else:
-                    #Normal execution - sleep time is positive
+                    # Normal execution - sleep time is positive
                     with Timer() as t4:
                         self._stop.wait(sleep_time)
                     results[4] = t4.milliseconds
