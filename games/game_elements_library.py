@@ -4,11 +4,7 @@ import time
 import math
 from threading import Thread
 
-# "Cairocffi" could be also installed as "cairo"
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
+import cairocffi as cairo
 
 
 class Player:

@@ -12,11 +12,6 @@ import math
 import time
 from games.game_elements_library import Circle, delayed_function_call
 
-# "Cairocffi" could be also installed as "cairo"
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
 
 
 class CatchColors2P(game.Game):

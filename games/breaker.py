@@ -7,11 +7,7 @@ import random
 from threading import Thread
 from enum import Enum
 
-# "Cairocffi" could be also installed as "cairo"
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
+import cairocffi as cairo
 
 from games.game_elements_library import Rectangle, Player, Paddle, Ball, Brick, delayed_function_call, \
     collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall, collide_to_top_wall

@@ -5,11 +5,7 @@ from games import game
 
 __author__ = 'Mark'
 
-# "Cairocffi" could be also installed as "cairo"
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
+import cairocffi as cairo
 
 from games.game_elements_library import Circle
 
