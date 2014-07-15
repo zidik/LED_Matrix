@@ -13,49 +13,62 @@ import time
 from games.game_elements_library import Circle, delayed_function_call
 
 
+class CatchColorsPlayer:
+    def __init__(self, color, number, max_points, surface_dims):
+        self.color = color
+
+        self.symbol = None
+        self._points = 0
+        x, y = surface_dims
+        self.points_bars = [
+            PointsBar(max_points, color, (0 + number, 0), (0 + number, y - 1 - 2)),
+            PointsBar(max_points, color, (0, y - 1 - number), (x - 1 - 2, y - 1 - number)),
+            PointsBar(max_points, color, (x - 1 - number, y - 1), (x - 1 - number, 0 + 2)),
+            PointsBar(max_points, color, (x - 1, 0 + number), (0 + 2, 0 + number))
+        ]
+
+    @property
+    def points(self):
+        return self._points
+
+    @points.setter
+    def points(self, value):
+        self._points = value
+        for bar in self.points_bars:
+            bar.points = self._points
+
 
 class CatchColors2P(game.Game):
     class State(Enum):
         running = 1
-        finished = 2
+        finishing = 2
+        finished = 3
 
     max_points = 21
-    P1_color = (0.0, 1.0, 0.0, 1.0)
-    P2_color = (0.0, 0.0, 1.0, 1.0)
+    player_colors = [(0.0, 1.0, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0)]
 
     def __init__(self, board_assignment, surface_dims):
         self._board_assignment = board_assignment
-        self._P1_symbol = None
-        self._P2_symbol = None
-        self._P1_points = 0
-        self._P2_points = 0
-        self._state = CatchColors2P.State.running
 
-        max_points = CatchColors2P.max_points
-        color = CatchColors2P.P1_color
-        x, y = surface_dims
-        self._P1_points_bars = [
-            PointsBar(max_points, color, (0, 0), (0, y - 1 - 2)),
-            PointsBar(max_points, color, (0, y - 1), (x - 1 - 2, y - 1)),
-            PointsBar(max_points, color, (x - 1, y - 1), (x - 1, 0 + 2)),
-            PointsBar(max_points, color, (x - 1, 0), (0 + 2, 0))
+        self._state = CatchColors2P.State.running
+        number_of_players = 2
+        self.players = [
+            CatchColorsPlayer(color, number, CatchColors2P.max_points, surface_dims)
+            for color, number
+            in zip(CatchColors2P.player_colors, range(number_of_players))
         ]
-        color = CatchColors2P.P2_color
-        self._P2_points_bars = [
-            PointsBar(max_points, color, (0 + 1, 0), (0 + 1, y - 1 - 2)),
-            PointsBar(max_points, color, (0, y - 1 - 1), (x - 1 - 2, y - 1 - 1)),
-            PointsBar(max_points, color, (x - 1 - 1, y - 1), (x - 1 - 1, 0 + 2)),
-            PointsBar(max_points, color, (x - 1, 0 + 1), (+2, 0 + 1)),
-        ]
+
+        #Used in resetting symbols to avoid boards/buttons, that are currently pressed
+        self.pressed_buttons_last_step = [] #Remember buttons pressed since last step
+
 
         self._reset_game()
 
     def _reset_game(self):
-        self._P1_points = 0
-        self._P2_points = 0
-        for bar in self._P1_points_bars + self._P2_points_bars:
-            bar.points = 0
-        self._reset_symbols()
+        for player in self.players:
+            player.points = 0
+            player.symbol = None
+
         self._state = CatchColors2P.State.running
 
     def button_pressed(self, board_id):
@@ -65,56 +78,66 @@ class CatchColors2P(game.Game):
         :param board_id: number of the board-button pressed.
         """
 
-        if self._P1_symbol.board_id == board_id:
-            self._P1_points += 1
-            for bar in self._P1_points_bars:
-                bar.points = self._P1_points
-            self._reset_symbols()
+        self.pressed_buttons_last_step.append(board_id)
 
-        if self._P2_symbol.board_id == board_id:
-            self._P2_points += 1
-            for bar in self._P2_points_bars:
-                bar.points = self._P2_points
-            self._reset_symbols()
+        if self._state != CatchColors2P.State.running:
+            return
 
-        if self._P1_points == CatchColors2P.max_points or self._P2_points == CatchColors2P.max_points:
-            self._state = CatchColors2P.State.finished
-            Thread(target=delayed_function_call, args=(2, self._reset_game)).start()
+        for player in self.players:
+            if player.symbol is None:
+                continue
+            if player.symbol.board_id == board_id:
+                player.points += 1
+                #Clear all player's symbols
+                for p in self.players:
+                    p.symbol = None
+
+                if player.points >= CatchColors2P.max_points:
+                    # Won!
+                    self._state = CatchColors2P.State.finishing
+                    Thread(target=delayed_function_call, args=(2, self._reset_game)).start()
 
     def step(self):
-        pass
+        if any([player.symbol is None for player in self.players]):
+            self._reset_symbols()
+
+        self.pressed_buttons_last_step = []
 
     def draw(self, ctx):
         if self._state == CatchColors2P.State.finished:
-            # Show winner color
-            if self._P1_points == CatchColors2P.max_points:
-                color = CatchColors2P.P1_color
-            elif self._P2_points == CatchColors2P.max_points:
-                color = CatchColors2P.P2_color
-            else:
-                return
-            ctx.set_source_rgba(*color)
-            ctx.paint()
+            for player in self.players:
+                if player.points == CatchColors2P.max_points:
+                    # Show winner color - Fade
+                    r, g, b, _ = player.color
+                    ctx.set_source_rgba(r, g, b, 0.1)
+                    ctx.paint()
         else:
+            if self._state == CatchColors2P.State.finishing:
+                #This is here to ensure last frame of the game is also drawn before fading away to winner color
+                self._state = CatchColors2P.State.finished
             # Clear Background
             ctx.set_source_rgb(0, 0, 0)
             ctx.paint()
 
-            self._P1_symbol.draw(ctx)
-            self._P2_symbol.draw(ctx)
-
-            for bar in self._P1_points_bars + self._P2_points_bars:
-                bar.draw(ctx)
+            for player in self.players:
+                player.symbol.draw(ctx)
+                for bar in player.points_bars:
+                    bar.draw(ctx)
 
     def _reset_symbols(self):
-        # P1 Symbol
-        board_id, x, y = random.choice(self._board_assignment)
-        self._P1_symbol = Symbol(center_x=x * 10 + 5, center_y=y * 10 + 5, board_id=board_id,
-                                 color=CatchColors2P.P1_color)
-        #P2 Symbol
-        board_id, x, y = random.choice(self._board_assignment)
-        self._P2_symbol = Symbol(center_x=x * 10 + 5, center_y=y * 10 + 5, board_id=board_id,
-                                 color=CatchColors2P.P2_color)
+        # Next symbol can only be on board that currently is not stepped on
+        choice_list = [
+            assignment for assignment in self._board_assignment
+            if not assignment[0] in self.pressed_buttons_last_step
+        ]
+        try:
+            # Choose random boards and create symbols on them
+            chosen_boards = random.sample(choice_list, len(self.players))
+            for player, (board_id, x, y) in zip(self.players, chosen_boards):
+                player.symbol = Symbol(center_x=x * 10 + 5, center_y=y * 10 + 5, board_id=board_id, color=player.color)
+        except ValueError:
+            # Currently not enough suitable boards to put symbols on
+            pass
 
 
 class PointsBar():
