@@ -3,6 +3,7 @@ from enum import Enum
 import logging
 
 from board_bus import BoardBus
+from matrix_controller import MatrixController
 from games import Animation, Breaker, CatchColors, CatchColors2P, LogoBounce, Pong, TestPattern
 
 
@@ -17,15 +18,17 @@ class GameController:
         catch_colors_2P = 6
 
     def __init__(self, matrix_controller):
+        assert isinstance(matrix_controller, MatrixController)
         self.matrix_controller = matrix_controller
         self._call_on_game_change = list()
 
     def set_game_mode(self, mode):
         logging.info("Game set to {}".format(mode))
-        surface_dims = self.matrix_controller.surface_dims
+        surface_dims = self.matrix_controller.surface_dims  # Floor dimensions in pixels
+        matrix_dims = self.matrix_controller.dimensions     # Floor dimensions in boards
 
         if mode == GameController.Mode.test:
-            game = TestPattern(surface_dims, BoardBus.board_assignment, self.matrix_controller.board_buses)
+            game = TestPattern(matrix_dims, BoardBus.board_assignment, self.matrix_controller.board_buses)
 
         elif mode == GameController.Mode.pong:
             game = Pong(surface_dims)

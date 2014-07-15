@@ -18,7 +18,9 @@ class GUIapp:
         self.matrix_controller = self.game_controller.matrix_controller
         assert isinstance(self.matrix_controller, MatrixController)
 
-        self.canvas_dims = 300, 300
+        canvas_width = 300
+        canvas_height = int(canvas_width / self.matrix_controller.dimensions[0] * self.matrix_controller.dimensions[1])
+        self.canvas_dims = canvas_width, canvas_height
 
         self.master = master
         self.frame = tkinter.Frame(self.master, width=600, height=400)
@@ -67,8 +69,8 @@ class GUIapp:
                 mode == GameController.Mode.catch_colors or \
                 mode == GameController.Mode.catch_colors_2P:
             override_keys = [
-                '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
-                                                             'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+                '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+                'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö',
                 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'
             ]
