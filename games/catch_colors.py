@@ -44,7 +44,7 @@ class CatchColors2P(game.Game):
         self._P2_points_bars = [
             PointsBar(max_points, color, (0 + 1, 0), (0 + 1, y - 1 - 2)),
             PointsBar(max_points, color, (0, y - 1 - 1), (x - 1 - 2, y - 1 - 1)),
-            PointsBar(max_points, color, (x - 1 - 1, y), (x - 1 - 1, 0 + 2)),
+            PointsBar(max_points, color, (x - 1 - 1, y - 1), (x - 1 - 1, 0 + 2)),
             PointsBar(max_points, color, (x - 1, 0 + 1), (+2, 0 + 1)),
         ]
 
@@ -93,7 +93,7 @@ class CatchColors2P(game.Game):
                 color = CatchColors2P.P2_color
             else:
                 return
-            ctx.set_source_rgba(color)
+            ctx.set_source_rgba(*color)
             ctx.paint()
         else:
             # Clear Background
@@ -124,48 +124,39 @@ class PointsBar():
         self._color = color
         self._start_point = start_point
         self._end_point = end_point
+        self.width = 1
 
     @property
     def _curr_point(self):
         length = self.points / self._max_points  # how much points relative to max
         diff = map(sub, self._end_point, self._start_point)
         vect = [coord * length for coord in diff]
-        return map(add, self._start_point, vect)
+        curr_point = list(map(add, self._start_point, vect))
+        return curr_point
 
-    @staticmethod
-    def _correct_line(p1, p2):
-        """
-        This corrects line endpoints for drawing with cairo.
-        (moves line 0.5px sideways and the further point by 1px further)
-        """
-        p1 = list(p1)
-        p2 = list(p2)
-        # Cairo draws sharp lines only if coordinates are aligned to half values
-        if p1[0] == p2[0]:
-            # Vertical line:
-            p1[0] += 0.5
-            p2[0] += 0.5
-            if p1[1] < p2[1]:
-                p2[1] += 1
-            else:
-                p1[1] += 1
-        elif p1[1] == p2[1]:
-            # Horizontal line:
-            p1[1] += 0.5
-            p2[1] += 0.5
-            if p1[0] < p2[0]:
-                p2[0] += 1
-            else:
-                p1[0] += 1
-        return p1, p2
+    @property
+    def _curr_length(self):
+        diff = list(map(sub, self._end_point, self._start_point))  # Vector pointing from start point to endpoint
+        max_length = (diff[0]**2+diff[1]**2)**0.5
+        curr_length = max_length * (self.points / self._max_points)
+        return curr_length
 
     def draw(self, ctx):
-        start_point, curr_point = PointsBar._correct_line(self._start_point, self._curr_point)
-        ctx.move_to(*start_point)
-        ctx.line_to(*curr_point)
         ctx.set_source_rgba(*self._color)
-        ctx.set_line_width(1)
-        ctx.stroke()
+        if self._start_point[0] == self._end_point[0]:
+            if self._start_point[1] <= self._end_point[1]:
+                ctx.rectangle(self._start_point[0], self._start_point[1], self.width, int(self._curr_length))
+            else:
+                ctx.rectangle(self._start_point[0], self._start_point[1]+1, self.width, -int(self._curr_length))
+        elif self._start_point[1] == self._end_point[1]:
+            if self._start_point[0] <= self._end_point[0]:
+                ctx.rectangle(self._start_point[0], self._start_point[1], int(self._curr_length), self.width)
+            else:
+                ctx.rectangle(self._start_point[0]+1, self._start_point[1], -int(self._curr_length), self.width)
+        else:
+            raise ValueError("PointsBar has to be horizontal or vertical")
+
+        ctx.fill()
 
 
 class CatchColors(game.Game):
