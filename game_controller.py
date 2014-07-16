@@ -4,7 +4,7 @@ import logging
 
 from board_bus import BoardBus
 from matrix_controller import MatrixController
-from games import Animation, Breaker, CatchColors, CatchColors2P, LogoBounce, Pong, TestPattern
+from games import Animation, Breaker, CatchColors, CatchColorsMultiplayer, LogoBounce, Pong, TestPattern
 
 
 class GameController:
@@ -15,14 +15,19 @@ class GameController:
         animation = 3
         logo = 4
         catch_colors = 5
-        catch_colors_2P = 6
+        catch_colors_multiplayer = 6
 
     def __init__(self, matrix_controller):
         assert isinstance(matrix_controller, MatrixController)
         self.matrix_controller = matrix_controller
         self._call_on_game_change = list()
+        self.current_mode = GameController.Mode.test
+
+    def reset_game(self):
+        self.set_game_mode(self.current_mode)
 
     def set_game_mode(self, mode):
+        self.current_mode = mode
         logging.info("Game set to {}".format(mode))
         surface_dims = self.matrix_controller.surface_dims  # Floor dimensions in pixels
         matrix_dims = self.matrix_controller.dimensions  # Floor dimensions in boards
@@ -50,8 +55,8 @@ class GameController:
             game = CatchColors(BoardBus.board_assignment)
             self._add_all_buttons(game)
 
-        elif mode == GameController.Mode.catch_colors_2P:
-            game = CatchColors2P(BoardBus.board_assignment, surface_dims)
+        elif mode == GameController.Mode.catch_colors_multiplayer:
+            game = CatchColorsMultiplayer(BoardBus.board_assignment, surface_dims)
             self._add_all_buttons(game)
 
         else:

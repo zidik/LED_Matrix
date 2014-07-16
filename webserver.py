@@ -7,6 +7,7 @@ import logging
 import threading
 
 from game_controller import GameController
+from games import CatchColorsMultiplayer #For configuring
 
 
 class MatrixWebserver(threading.Thread):
@@ -133,12 +134,19 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
                 CONTENT_TYPE=self.headers["Content-Type"]
             )
         )
+
+        response = ""
+
         mode = form.getfirst("mode")
-        if mode != "nothing":
+        if mode is not None and mode != "nothing":
             MyHTTPRequestHandler.game_controller.set_game_mode(GameController.Mode[mode])
-            response = "Mode successfully changed to '{}'".format(mode)
-        else:
-            response = ""
+            response += "Mode successfully changed to '{}'. \n".format(mode)
+
+        catch_colors_players = form.getfirst("catch_colors_players")
+        if catch_colors_players is not None and catch_colors_players != "nothing":
+            CatchColorsMultiplayer.number_of_players = int(catch_colors_players)
+            self.game_controller.reset_game()
+            response += "Players successfully changed to '{}'. \n".format(CatchColorsMultiplayer.number_of_players)
 
         return response
 

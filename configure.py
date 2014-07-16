@@ -3,8 +3,7 @@ __author__ = 'Mark'
 from matrix_controller import MatrixController
 from games.game_elements_library import Ball, Paddle
 from games.catch_colors import FadingSymbol
-from games import Breaker
-from games import Pong
+from games import Breaker, Pong, CatchColorsMultiplayer
 
 
 def configure_all(config):
@@ -14,6 +13,7 @@ def configure_all(config):
     conf_pong(config["Pong"])
     conf_breaker(config["Breaker"])
     conf_catch_colors(config["Catch Colors"])
+    conf_catch_colors_multi(config["Catch Colors Multiplayer"])
 
 
 def csv_to_int_list(csv_string):
@@ -79,3 +79,9 @@ def conf_catch_colors(conf):
     FadingSymbol.color_end = csv_to_float_list(conf["Symbol end color"])
     FadingSymbol.lifetime = float(conf["Symbol lifetime"])
     FadingSymbol.change_period = float(conf["Symbol change period"])
+
+
+def conf_catch_colors_multi(conf):
+    CatchColorsMultiplayer.number_of_players = int(conf["Players"])
+    CatchColorsMultiplayer.player_colors = [csv_to_float_list(color) for color in conf["Player colors"].splitlines()]
+

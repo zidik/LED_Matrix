@@ -67,7 +67,7 @@ class GUIapp:
             ]
         if mode == GameController.Mode.animation or \
                         mode == GameController.Mode.catch_colors or \
-                        mode == GameController.Mode.catch_colors_2P:
+                        mode == GameController.Mode.catch_colors_multiplayer:
             override_keys = [
                 '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
                 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
