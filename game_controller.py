@@ -3,37 +3,37 @@ from enum import Enum
 import logging
 
 from board_bus import BoardBus
-from breaker import Breaker
-from pong import Pong
-from test_pattern import TestPattern
-from logo_bounce import LogoBounce
-from animation import Animation
-from catch_colors import CatchColors, CatchColors2P
+from matrix_controller import MatrixController
+from games import Animation, Breaker, CatchColors, CatchColorsMultiplayer, LogoBounce, Pong, TestPattern
 
 
 class GameController:
     class Mode(Enum):
-        nothing = -1
         test = 0
         pong = 1
         breaker = 2
         animation = 3
         logo = 4
         catch_colors = 5
-        catch_colors_2P = 6
+        catch_colors_multiplayer = 6
 
     def __init__(self, matrix_controller):
+        assert isinstance(matrix_controller, MatrixController)
         self.matrix_controller = matrix_controller
         self._call_on_game_change = list()
+        self.current_mode = GameController.Mode.test
+
+    def reset_game(self):
+        self.set_game_mode(self.current_mode)
 
     def set_game_mode(self, mode):
+        self.current_mode = mode
         logging.info("Game set to {}".format(mode))
-        surface_dims = self.matrix_controller.surface_dims
-        if mode == GameController.Mode.nothing:
-            game = None
+        surface_dims = self.matrix_controller.surface_dims  # Floor dimensions in pixels
+        matrix_dims = self.matrix_controller.dimensions  # Floor dimensions in boards
 
-        elif mode == GameController.Mode.test:
-            game = TestPattern(surface_dims, BoardBus.board_assignment, self.matrix_controller.board_buses)
+        if mode == GameController.Mode.test:
+            game = TestPattern(matrix_dims, BoardBus.board_assignment, self.matrix_controller.board_buses)
 
         elif mode == GameController.Mode.pong:
             game = Pong(surface_dims)
@@ -55,8 +55,8 @@ class GameController:
             game = CatchColors(BoardBus.board_assignment)
             self._add_all_buttons(game)
 
-        elif mode == GameController.Mode.catch_colors_2P:
-            game = CatchColors2P(BoardBus.board_assignment, surface_dims)
+        elif mode == GameController.Mode.catch_colors_multiplayer:
+            game = CatchColorsMultiplayer(BoardBus.board_assignment, surface_dims)
             self._add_all_buttons(game)
 
         else:
@@ -76,16 +76,16 @@ class GameController:
         self.matrix_controller.buttons = []
         assert isinstance(game, Pong)
         for i in range(10):
-            #P2 buttons
+            # P2 buttons
             self.matrix_controller.add_button(
-                board_id=128+i,
+                board_id=128 + i,
                 function=game.button_pressed,
                 args=[2, i]
             )
         for i in range(10):
-            #P1 buttons
+            # P1 buttons
             self.matrix_controller.add_button(
-                board_id=128+90+i,
+                board_id=128 + 90 + i,
                 function=game.button_pressed,
                 args=[1, i]
             )
@@ -95,7 +95,7 @@ class GameController:
         assert isinstance(game, Breaker)
         for i in range(10):
             self.matrix_controller.add_button(
-                board_id=128+90+i,
+                board_id=128 + 90 + i,
                 function=game.button_pressed,
                 args=[i]
             )
@@ -104,7 +104,7 @@ class GameController:
         self.matrix_controller.buttons = []
         for i in range(100):
             self.matrix_controller.add_button(
-                board_id=128+i,
+                board_id=128 + i,
                 function=game.button_pressed,
-                args=[128+i]
+                args=[128 + i]
             )

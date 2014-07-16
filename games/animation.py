@@ -1,17 +1,13 @@
-import random
 import math
+
+from games import game
+
 
 __author__ = 'Mark'
 
-import game
+import cairocffi as cairo
 
-# "Cairocffi" could be also installed as "cairo"
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
-
-from game_elements_library import Circle, Moving
+from games.game_elements_library import Circle
 
 
 class Animation(game.Game):
@@ -27,8 +23,8 @@ class Animation(game.Game):
                 circle.step()
 
     def draw(self, ctx):
-        #Clear Background
-        ctx.set_source_rgba(0, 0, 0, 0.2) #Alpha 0.2 to introduce "delay" or "fade"
+        # Clear Background
+        ctx.set_source_rgba(0, 0, 0, 0.2)  # Alpha 0.2 to introduce "delay" or "fade"
         ctx.paint()
 
         for circle in self.expanding_circles:
@@ -63,6 +59,7 @@ class ExpandingCircle(Circle):
         if self.radius > self.final_radius:
             self.dead = True
 
+
     def draw(self, cairo_context):
         if self.dead:
             return
@@ -72,7 +69,7 @@ class ExpandingCircle(Circle):
         cairo_context.set_source(
             cairo.SolidPattern(
                 1, 1, 1,
-                (1 - self.radius / self.final_radius)**4
+                (1 - self.radius / self.final_radius) ** 4
             )
         )
         cairo_context.stroke()

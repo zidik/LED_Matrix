@@ -2,8 +2,8 @@ __author__ = 'Mark Laane'
 
 # Python 3.4.0
 # PySerial 2.7
-#Numpy 1.8.1
-#Pillow 2.4.0
+# Numpy 1.8.1
+# Pillow 2.4.0
 
 import tkinter
 import logging
@@ -13,12 +13,7 @@ from GUI_app import GUIapp
 from matrix_controller import MatrixController
 from game_controller import GameController
 from webserver import MatrixWebserver
-
-from configure import configure_all, csv_to_int_list
-
-
-
-
+from configure import configure_all
 
 
 def main():
@@ -32,13 +27,11 @@ def main():
     config.read('config.ini')
     # General
     gui_enabled = config["General"].getboolean("GUI")
-    # Matrix
-    serial_ports = csv_to_int_list(config["Matrix"]["Serial ports"])
     configure_all(config)
     logging.debug("Configuration loaded.")
 
     ### Starting up Matrix
-    matrix_controller = MatrixController(serial_ports)
+    matrix_controller = MatrixController()
 
     game_controller = GameController(matrix_controller)
 
@@ -79,7 +72,6 @@ def main():
     matrix_controller.stop()
     logging.info("Stopped.")
     ### END
-
 
 
 if __name__ == '__main__':

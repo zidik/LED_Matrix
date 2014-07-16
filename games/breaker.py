@@ -1,19 +1,15 @@
+from games import game
+
 __author__ = 'Mark'
 
 import math
 import random
 from threading import Thread
 from enum import Enum
-import time
 
-# "Cairocffi" could be also installed as "cairo"
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
+import cairocffi as cairo
 
-import game
-from game_elements_library import Rectangle, Player, Paddle, Ball, Brick, delayed_function_call, \
+from games.game_elements_library import Rectangle, Player, Paddle, Ball, Brick, delayed_function_call, \
     collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall, collide_to_top_wall
 
 
@@ -60,10 +56,10 @@ class Breaker(game.Game):
         :param button_number: number of the board-button pressed.
         """
 
-        if not(0 <= button_number <= 9):
+        if not (0 <= button_number <= 9):
             raise ValueError("Invalid ButtonNumber")
 
-        #Start the game if we were waiting for user
+        # Start the game if we were waiting for user
         if self._state == Breaker.State.waiting_push:
             self._state = Breaker.State.running
 
@@ -73,7 +69,7 @@ class Breaker(game.Game):
         if self._state != Breaker.State.running:
             return
 
-        #Make game quicker
+        # Make game quicker
         self.paddle.speed += Breaker.speed_change
         self.ball_speed += Breaker.speed_change
         for ball in self.balls:
@@ -115,13 +111,12 @@ class Breaker(game.Game):
         self.invalidated_areas = []
 
     def _draw(self, ctx, invalidated_rect):
-        ### DEBUG OPTIONS ###
+        # ## DEBUG OPTIONS ###
         display_redraw = True
-        #####################
-
+        # ####################
 
         not_redrawn = self.balls + [self.paddle] + self.bricks  # Elements that will not be redrawn
-        redrawn = []    # Elements that will be redrawn
+        redrawn = []  # Elements that will be redrawn
 
         # Add all elements that reside inside "invalidated rect" to list "redrawn"
         new_added = True
@@ -186,13 +181,13 @@ class Breaker(game.Game):
         intersection = brick.intersection(ball)
         if intersection is not None:
             if intersection.width > intersection.height:
-                #bounce from top-or bottom
+                # bounce from top-or bottom
                 ball.speed_y = math.copysign(
                     ball.speed_y,
                     ball.center_y - brick.center_y
                 )
             else:
-                #bounce from sides
+                # bounce from sides
                 ball.speed_x = math.copysign(
                     ball.speed_x,
                     ball.center_x - brick.center_x

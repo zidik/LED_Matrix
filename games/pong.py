@@ -1,3 +1,5 @@
+from games import game
+
 __author__ = 'Mark'
 
 import random
@@ -5,13 +7,11 @@ import math
 from threading import Thread
 from enum import Enum
 
-import game
-from game_elements_library import Player, Paddle, Ball, delayed_function_call, \
+from games.game_elements_library import Player, Paddle, Ball, delayed_function_call, \
     collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall
 
 
 class Pong(game.Game):
-
     lives = 4
 
     init_ball_speed = 0.1
@@ -53,10 +53,10 @@ class Pong(game.Game):
         else:
             raise ValueError("Invalid Player")
 
-        if not(0 <= button_number <= 9):
+        if not (0 <= button_number <= 9):
             raise ValueError("Invalid ButtonNumber")
 
-        #Start the game if we were waiting for user
+        # Start the game if we were waiting for user
         if self._state == Pong.State.waiting_push:
             self._state = Pong.State.running
 
@@ -66,7 +66,7 @@ class Pong(game.Game):
         if not (self._state == Pong.State.running):
             return
 
-        #Make game quicker
+        # Make game quicker
         self._p1_paddle.speed += Pong.speed_change
         self._p2_paddle.speed += Pong.speed_change
         self.ball_speed += Pong.speed_change
@@ -90,7 +90,7 @@ class Pong(game.Game):
                     self._p2_paddle.set_health(self._p2.hp, self._p2.max_hp)
                 if loser.is_alive:
                     self._ball = None
-                    #reduce ball speed 1/3'rd
+                    # reduce ball speed 1/3'rd
                     #self.ball_speed = self.ball_speed/3*2
                     thread = Thread(target=delayed_function_call, args=(1, self._reset_ball, [loser]))
                     thread.start()
@@ -101,7 +101,7 @@ class Pong(game.Game):
                     thread.start()
 
     def draw(self, ctx):
-        #Clear Background
+        # Clear Background
         ctx.set_source_rgb(0, 0, 0)
         ctx.paint()
 

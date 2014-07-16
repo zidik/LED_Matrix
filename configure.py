@@ -1,17 +1,19 @@
 __author__ = 'Mark'
 
-from game_elements_library import Ball, Paddle
-from catch_colors import FadingSymbol
-from breaker import Breaker
-from pong import Pong
+from matrix_controller import MatrixController
+from games.game_elements_library import Ball, Paddle
+from games.catch_colors import FadingSymbol
+from games import Breaker, Pong, CatchColorsMultiplayer
 
 
 def configure_all(config):
+    conf_matrix(config["Matrix"])
     conf_ball(config["Ball"])
     conf_paddle(config["Paddle"])
     conf_pong(config["Pong"])
     conf_breaker(config["Breaker"])
     conf_catch_colors(config["Catch Colors"])
+    conf_catch_colors_multi(config["Catch Colors Multiplayer"])
 
 
 def csv_to_int_list(csv_string):
@@ -23,6 +25,13 @@ def csv_to_int_list(csv_string):
 
 def csv_to_float_list(color_string):
     return [float(x.strip()) for x in color_string.split(',')]
+
+
+def conf_matrix(conf):
+    MatrixController.serial_ports = csv_to_int_list(conf["Serial ports"])
+    MatrixController.data_update_FPS = float(conf["Data Update FPS"])
+    MatrixController.sensor_update_FPS = float(conf["Serial Update FPS"])
+    MatrixController.dimensions = int(conf["Width"]), int(conf["Height"])
 
 
 def conf_ball(conf):
@@ -70,3 +79,9 @@ def conf_catch_colors(conf):
     FadingSymbol.color_end = csv_to_float_list(conf["Symbol end color"])
     FadingSymbol.lifetime = float(conf["Symbol lifetime"])
     FadingSymbol.change_period = float(conf["Symbol change period"])
+
+
+def conf_catch_colors_multi(conf):
+    CatchColorsMultiplayer.number_of_players = int(conf["Players"])
+    CatchColorsMultiplayer.player_colors = [csv_to_float_list(color) for color in conf["Player colors"].splitlines()]
+

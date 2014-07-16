@@ -1,14 +1,10 @@
+from games import game
+
 __author__ = 'Mark'
 
-import game
+import cairocffi as cairo
 
-# "Cairocffi" could be also installed as "cairo"
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
-
-from game_elements_library import Rectangle, Moving, \
+from games.game_elements_library import Rectangle, Moving, \
     collide_to_left_wall, collide_to_bottom_wall, collide_to_right_wall, collide_to_top_wall
 
 
@@ -25,7 +21,7 @@ class LogoBounce(game.Game):
         collide_to_bottom_wall(self.logo, self.field_dims[1])
 
     def draw(self, context):
-        #Clear Background
+        # Clear Background
         context.set_source_rgb(0, 0, 0)
         context.paint()
         self.logo.draw(context)
@@ -48,7 +44,6 @@ class Logo(Rectangle, Moving):
         self.center_y += self.speed_y
 
     def draw(self, ctx):
-
         # scale image and add it
         ctx.save()
         ctx.translate(self.left, self.top)

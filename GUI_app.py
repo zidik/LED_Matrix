@@ -8,7 +8,8 @@ from PIL import ImageTk
 
 from fpsManager import FpsManager
 from game_controller import GameController
-from matrix_controller import MatrixController, BoardButton
+from matrix_controller import MatrixController
+
 
 class GUIapp:
     def __init__(self, master, game_controller):
@@ -17,11 +18,13 @@ class GUIapp:
         self.matrix_controller = self.game_controller.matrix_controller
         assert isinstance(self.matrix_controller, MatrixController)
 
-        self.canvas_dims = 300, 300
+        canvas_width = 300
+        canvas_height = int(canvas_width / self.matrix_controller.dimensions[0] * self.matrix_controller.dimensions[1])
+        self.canvas_dims = canvas_width, canvas_height
 
         self.master = master
         self.frame = tkinter.Frame(self.master, width=600, height=400)
-        self.frame.pack()  # (fill=tkinter.BOTH, expand=1) TODO?
+        self.frame.pack()
         self.canvas = tkinter.Canvas(self.frame, width=self.canvas_dims[0], height=self.canvas_dims[1])
         self.canvas.pack()
 
@@ -62,20 +65,24 @@ class GUIapp:
             override_keys = [
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö'
             ]
-        if mode == GameController.Mode.animation or\
-            mode == GameController.Mode.catch_colors or\
-            mode == GameController.Mode.catch_colors_2P:
+        if mode == GameController.Mode.animation or \
+                        mode == GameController.Mode.catch_colors or \
+                        mode == GameController.Mode.catch_colors_multiplayer:
             override_keys = [
-                '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
+                '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
                 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö',
                 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'
             ]
 
-        for button in self.matrix_controller.buttons:
-            if len(override_keys) == 0:
+        for i in range(len(self.matrix_controller.buttons)):
+            assert (self.matrix_controller.dimensions[0] <= 10)  # Next line will break otherwise
+            try:
+                self.matrix_controller.buttons[i].override_key = override_keys[
+                    i + i // self.matrix_controller.dimensions[0] * (10 - self.matrix_controller.dimensions[0])
+                ]
+            except IndexError:
                 break
-            button.override_key = override_keys.pop(0)
 
     def update(self):
         self._data_updated = True
