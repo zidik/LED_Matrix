@@ -22,6 +22,7 @@ function changePlayers(select){
 }
 
 function ajaxPOST(target_page, content_type, values) {
+    document.getElementById("server_response").innerHTML = ' Processing...';
     var xmlhttp;
     if (window.XMLHttpRequest) {
         // code for IE7+, Firefox, Chrome, Opera, Safari
@@ -31,8 +32,12 @@ function ajaxPOST(target_page, content_type, values) {
         xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
     }
     xmlhttp.onreadystatechange = function () {
-        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-            document.getElementById("server_response").innerHTML = xmlhttp.responseText;
+        if (xmlhttp.readyState == 4) {
+            if(xmlhttp.status == 200) {
+                document.getElementById("server_response").innerHTML = xmlhttp.responseText;
+            } else {
+                document.getElementById("server_response").innerHTML = ' <span style="color:red;" id="error" > Fail: No response received </span>';
+            }
         }
     };
     xmlhttp.open("POST", target_page, true);
