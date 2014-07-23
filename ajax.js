@@ -1,18 +1,19 @@
 window.onload = function () {
     document.getElementById('mode_submit').style.visibility = 'hidden';
 
-    document.getElementById('catch_colors_players_label').style.visibility='hidden';
-    document.getElementById('catch_colors_players_select').style.visibility='hidden';
+    document.getElementById('catch_colors_players_label').style.display='none';
+    document.getElementById('catch_colors_players_select').style.display='none';
 };
 
 function changeMode(select) {
     ajaxPOST(select.form.action, 'application/x-www-form-urlencoded', select.name+'='+select.value);
     if (select.value=='catch_colors_multiplayer') {
-        document.getElementById('catch_colors_players_label').style.visibility='visible';
-        document.getElementById('catch_colors_players_select').style.visibility='visible';
+        document.getElementById('catch_colors_players_label').style.display='inline-block';
+        document.getElementById('catch_colors_players_select').style.display='inline-block';
         document.getElementById('catch_colors_players_select').selectedIndex = 0;
     } else {
-        document.getElementById('catch_colors_players_select').style.visibility='hidden';
+        document.getElementById('catch_colors_players_label').style.display='none';
+        document.getElementById('catch_colors_players_select').style.display='none';
     }
 }
 
