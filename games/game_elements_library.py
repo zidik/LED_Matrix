@@ -153,6 +153,10 @@ class Circle():
     def bottom(self, value):
         self.center_y = value - self.radius
 
+    @property
+    def bounding_box(self):
+        return Rectangle(self.left, self.top, self.radius * 2, self.radius * 2)
+
 
 class Brick(Rectangle):
     def __init__(self, x, y, width, height, colors):
@@ -211,22 +215,23 @@ class Ball(Circle, Moving):
         self.fill_pattern = cairo.SolidPattern(*Ball.fill_color)
 
     def step(self):
-        last_bounding_box = Rectangle(self.left - 1, self.top - 1, 2 * self.radius + 2, 2 * self.radius + 2)
+        last_bounding_box = self.bounding_box
 
         self.center_x += self.speed_x
         self.center_y += self.speed_y
 
-        new_bounding_box = Rectangle(self.left - 1, self.top - 1, 2 * self.radius + 2, 2 * self.radius + 2)
+        new_bounding_box = self.bounding_box
         dirty_area = last_bounding_box.union(new_bounding_box)
         return dirty_area
 
     def draw(self, cairo_context):
-        cairo_context.arc(self.center_x, self.center_y, self.radius, 0, 2 * math.pi)
+        cairo_context.arc(self.center_x, self.center_y, self.radius-0.5 , 0, 2 * math.pi)
         cairo_context.set_line_width(1)
         cairo_context.set_source(self.fill_pattern)
         cairo_context.fill_preserve()
         cairo_context.set_source(self.stroke_pattern)
         cairo_context.stroke()
+
 
 
 class Paddle(Rectangle):
@@ -270,23 +275,19 @@ class Paddle(Rectangle):
         blink_period = 0.4
         if show_current:
             self.gradient_pos = 1 - (health - 1) / (max_health - 1)
-
-            # Invalidate whole area so it will be redrawn
-            self._invalidate_rect(Rectangle(self.left, self.top, self.width, self.height))
-
-            if blink_count <= 0:
-                return
-
-            Thread(
-                target=delayed_function_call,
-                args=(blink_period / 2, self._blink_health, [health, max_health, blink_count - 1, False])
-            ).start()
+            if blink_count > 0:
+                Thread(
+                    target=delayed_function_call,
+                    args=(blink_period / 2, self._blink_health, [health, max_health, blink_count - 1, False])
+                ).start()
         else:
             self.gradient_pos = 1 - health / (max_health - 1)
             Thread(
                 target=delayed_function_call,
                 args=(blink_period / 2, self._blink_health, [health, max_health, blink_count])
             ).start()
+        # Invalidate whole area so it will be redrawn
+        self._invalidate_rect(self.bounding_box)
 
     def set_position(self, position):
         self.set_target_position(position)
@@ -295,14 +296,18 @@ class Paddle(Rectangle):
     def set_target_position(self, target_position):
         self.target_position = target_position
 
+    @property
+    def bounding_box(self):
+        return Rectangle(self.left, self.top, self.width, self.height)
+
     def step(self):
         # calculate difference between current and target position
         delta = self.target_position - self.center_x
         if abs(delta) > 0:
-            last_bounding_box = Rectangle(self.left, self.top, self.width, self.height)
+            last_bounding_box = self.bounding_box
             # move accordingly (limited by speed)
             self.center_x += clamp(delta, -self.speed, self.speed)
-            new_bounding_box = Rectangle(self.left, self.top, self.width, self.height)
+            new_bounding_box = self.bounding_box
             invalidated_area = last_bounding_box.union(new_bounding_box)
             self._invalidate_rect(invalidated_area)
 

@@ -112,7 +112,7 @@ class Breaker(game.Game):
 
     def _draw(self, ctx, invalidated_rect):
         # ## DEBUG OPTIONS ###
-        display_redraw = True
+        display_redraw = False
         # ####################
 
         not_redrawn = self.balls + [self.paddle] + self.bricks  # Elements that will not be redrawn
@@ -133,13 +133,13 @@ class Breaker(game.Game):
         ctx.rectangle(
             int(invalidated_rect.left),
             int(invalidated_rect.top),
-            math.ceil(invalidated_rect.width),
-            math.ceil(invalidated_rect.height)
+            math.ceil(invalidated_rect.width + (invalidated_rect.left - int(invalidated_rect.left))),
+            math.ceil(invalidated_rect.height + (invalidated_rect.top - int(invalidated_rect.top)))
         )
 
         # show redrawn area
         if display_redraw:
-            pat = cairo.SolidPattern(0, 0, 1.0, 0.5)
+            pat = cairo.SolidPattern(1.0, 0.0, 0.0, 0.5)
             ctx.set_source(pat)
             ctx.stroke_preserve()
 
@@ -158,7 +158,7 @@ class Breaker(game.Game):
         self._reset_bricks()
         self.balls = []
         self.paddle.set_position((self.field_dims[0] - 1) / 2)
-        self.paddle.set_health(self.player.max_hp, self.player.max_hp)
+        self.paddle.set_health(self.player.max_hp, self.player.max_hp, blink=0)
         self.player.reset()
         Thread(target=delayed_function_call, args=(2, self._start_waiting)).start()
         self.invalidated_areas = [Rectangle(0, 0, self.field_dims[0], self.field_dims[1])]
@@ -209,6 +209,7 @@ class Breaker(game.Game):
         ball = Ball(self.paddle.center_x, self.paddle.top, self.ball_speed, heading)
         ball.center_y -= ball.radius
         self.balls.append(ball)
+        self.invalidated_areas.append(ball.bounding_box)
 
     def _reset_bricks(self):
         self.bricks = []
