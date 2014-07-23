@@ -73,8 +73,8 @@ class BoardBus(threading.Thread):
 
             # ##### SENDING PART  #####
             # TODO: IS this a bug? - program might get stuck here and not receive data from bus if nothing is sent.
-            # TODO: Maybe add timeout - how long should it be?
-            if self._change_in_flags.wait():  # Wait until something happens
+            # TODO: Maybe add timeout - how long should it be? 10ms?
+            if self._change_in_flags.wait(timeout=0.010):  # Wait until something happens
                 self._change_in_flags.clear()
 
                 if self._update_display_flag:
@@ -88,8 +88,10 @@ class BoardBus(threading.Thread):
                     self._read_sensors()
                     self.fps["Sensor poll"].cycle_complete()
 
+        while self.silence_until > time.time():
+            pass
+        self._turn_off_boards()
         logging.info(self.serial_connection.name + " serial update thread stopped")
-        self.turn_off_boards()
 
     def join(self, timeout=None):
         """
@@ -119,30 +121,19 @@ class BoardBus(threading.Thread):
         self._update_sensors_flag = True
         self._change_in_flags.set()
 
-    def turn_off_boards(self):
-        """
-        Turns off all LED's on all boards on the bus
-        """
-        input_list = 100 * 3 * [0]
-        # TODO: test if still needed
-        for i in range(2):  # Hack to ensure turning boards off in the end. Not really sure, why does it work.
-            self.broadcast_board.refresh_leds(input_list)
+    def _new_board(self, board_id):
+        board = None
+        for assignment in BoardBus.board_assignment:
+            if assignment[0] == board_id:
+                board = Board(board_id, self.serial_connection, assignment[1], assignment[2])
+                logging.info(
+                    "Assigned board {id} col={col} row={row}".format(id=board_id, col=assignment[1], row=assignment[2]))
+                self.boards.append(board)
+                break
+        else:
+            logging.warning("Assignment for board {} not found".format(board_id))
 
-    def _refresh_leds(self):
-        for board in self.boards:
-            numpy_input = self.data[board.row * 10:board.row * 10 + 10, board.column * 10:board.column * 10 + 10]
-            input_list = self._numpy_to_input_list(numpy_input)
-            board.refresh_leds(input_list)
-
-    def _read_sensors(self):
-        """
-        NB! sensor readings are being buffered in hardware(Bus converter)
-        this causes some of data to be read out next cycle
-        """
-        self.broadcast_board.read_sensor()
-        number_of_boards = self.next_sequence_no
-        slot_time = 500  # Time for each board in microseconds
-        self.silence_until = time.time() + (math.ceil(number_of_boards * slot_time) / 1000) / 1000
+        return board
 
     @staticmethod
     def _numpy_to_input_list(np_list):
@@ -232,6 +223,40 @@ class BoardBus(threading.Thread):
             else:
                 logging.error("UNKNOWN RESPONSE CODE. Response={}".format(response))
 
+    #
+    # Methods below this line send data to serial bus:
+    # They must ONLY be called from BoardBus thread.
+    # BoardBus thread controls the timing and sequencing of these methods
+    ###########################################################
+
+    def _turn_off_boards(self):
+        """
+        Turns off all LED's on all boards on the bus
+        """
+        input_list = 100 * 3 * [0]
+        # TODO: test if still needed
+        for i in range(2):  # Hack to ensure turning boards off in the end. Not really sure, why does it work.
+            self.broadcast_board.refresh_leds(input_list)
+
+    def _reset_id_ALL(self):
+        self.broadcast_board.reset_id()
+
+    def _refresh_leds(self):
+        for board in self.boards:
+            numpy_input = self.data[board.row * 10:board.row * 10 + 10, board.column * 10:board.column * 10 + 10]
+            input_list = self._numpy_to_input_list(numpy_input)
+            board.refresh_leds(input_list)
+
+    def _read_sensors(self):
+        """
+        NB! sensor readings are being buffered in hardware(Bus converter)
+        this causes some of data to be read out next cycle
+        """
+        self.broadcast_board.read_sensor()
+        number_of_boards = self.next_sequence_no
+        slot_time = 500  # Time for each board in microseconds #TODO: ADJUST THIS
+        self.silence_until = time.time() + (math.ceil(number_of_boards * slot_time) / 1000) / 1000
+
     def _assign_board_id(self):
         try:
             board_id = BoardBus._id_pool.get_nowait()
@@ -245,17 +270,3 @@ class BoardBus(threading.Thread):
     def _assign_board_seq_no(self, board):
         board.assign_sequence_number(self.next_sequence_no)
         self.next_sequence_no += 1
-
-    def _new_board(self, board_id):
-        board = None
-        for assignment in BoardBus.board_assignment:
-            if assignment[0] == board_id:
-                board = Board(board_id, self.serial_connection, assignment[1], assignment[2])
-                logging.info(
-                    "Assigned board {id} col={col} row={row}".format(id=board_id, col=assignment[1], row=assignment[2]))
-                self.boards.append(board)
-                break
-        else:
-            logging.warning("Assignment for board {} not found".format(board_id))
-
-        return board
