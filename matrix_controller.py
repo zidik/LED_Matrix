@@ -83,7 +83,7 @@ class MatrixController:
         # Enumerate/ping boards
         for bus in self.board_buses:
             assert isinstance(bus, BoardBus)
-            bus.broadcast_board.ping()
+            bus.ping_all()
 
     def stop(self):
         """
