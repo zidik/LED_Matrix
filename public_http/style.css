@@ -1,0 +1,29 @@
+div {
+border: 1px solid #666;
+}
+
+#wrapper {
+clear: both;
+}
+
+#server_response {
+min-height: 30px;
+}
+
+label {
+display: inline-block;
+width: 120px;
+text-align: right;
+}
+
+input[type="button"] {
+border: 1px solid #666;
+}
+
+.on {
+background: GreenYellow;
+}
+
+.off {
+background: Tomato;
+}

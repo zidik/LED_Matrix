@@ -53,7 +53,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
 
             # Open the static file requested and send it
             try:
-                with open(os.curdir + os.sep + self.path) as f:
+                with open(os.curdir + os.sep + "public_http" + os.sep + self.path) as f:
                     response = f.read()
             except IOError:
                 self.send_error(404, "File Not Found: {}".format(self.path))
