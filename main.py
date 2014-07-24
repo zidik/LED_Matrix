@@ -49,7 +49,7 @@ def main():
         # Matrix controller will trigger GUI update when data changes
         matrix_controller.connect("data_update", app.update)
 
-    game_controller.set_game_mode(GameController.Mode.catch_colors)
+    game_controller.set_game_mode(GameController.Mode.test)
 
     if gui_enabled:
         logging.debug("Entering tkinter mainloop")

@@ -5,7 +5,7 @@ __author__ = 'Mark'
 import math
 import random
 from threading import Thread
-from enum import Enum
+from enum import Enum, unique
 
 import cairocffi as cairo
 
@@ -29,6 +29,7 @@ class Breaker(game.Game):
 
     multi_ball_probability = 0.1
 
+    @unique
     class State(Enum):
         initialising = -1
         starting_delay = 0

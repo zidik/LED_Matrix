@@ -5,7 +5,7 @@ __author__ = 'Mark'
 import random
 import math
 from threading import Thread
-from enum import Enum
+from enum import Enum, unique
 
 from games.game_elements_library import Player, Paddle, Ball, delayed_function_call, \
     collide_ball_to_paddle, collide_to_left_wall, collide_to_right_wall
@@ -18,6 +18,7 @@ class Pong(game.Game):
     init_paddle_speed = 0.1
     speed_change = 0.001
 
+    @unique
     class State(Enum):
         starting_delay = 0
         waiting_push = 1

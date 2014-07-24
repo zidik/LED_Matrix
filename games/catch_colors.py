@@ -7,7 +7,7 @@ from games import game
 __author__ = 'Mark'
 
 from operator import mul, sub, add
-from enum import Enum
+from enum import Enum, unique
 from threading import Thread
 import math
 import time
@@ -39,8 +39,8 @@ class CatchColorsPlayer:
             bar.points = self._points
 
 
-
 class CatchColorsMultiplayer(game.Game):
+    @unique
     class State(Enum):
         running = 1
         finishing = 2

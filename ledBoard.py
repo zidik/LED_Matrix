@@ -1,6 +1,6 @@
 __author__ = 'Mark'
 
-from enum import Enum
+from enum import Enum, unique
 import logging
 
 BROADCAST_ADDRESS = 255
@@ -10,7 +10,7 @@ class Board:
     """
     This class describes all properties and functions of one LED board.
     """
-
+    @unique
     class Command(Enum):
         """ All command-codes sent over serial """
         # From Board to Master

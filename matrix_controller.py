@@ -182,6 +182,7 @@ class MatrixController:
             loopcount += 1
             if loopcount > 10 * fps or skipped_frames > 0:
                 loopcount = 0
+                """
                 logging.debug(
                     "update total: {0[0]:.3f} step: {0[1]:.3f}ms, "
                     "draw: {0[2]:.3f}ms, convert: {0[3]:.3f}ms, \n"
@@ -190,7 +191,9 @@ class MatrixController:
                         sleep_time * 1000,
                         skipped_frames
                     )
+
                 )
+                """
 
         logging.debug("Thread \"{}\" stopped".format(threading.current_thread().name))
 

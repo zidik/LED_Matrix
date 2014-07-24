@@ -1,5 +1,5 @@
 __author__ = 'Mark'
-from enum import Enum
+from enum import Enum, unique
 import logging
 
 from board_bus import BoardBus
@@ -8,6 +8,7 @@ from games import Animation, Breaker, CatchColors, CatchColorsMultiplayer, LogoB
 
 
 class GameController:
+    @unique
     class Mode(Enum):
         test = 0
         pong = 1
