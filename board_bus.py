@@ -75,8 +75,13 @@ class BoardBus(threading.Thread):
         Produced responses will be consumed in BoardBus thread
         """
         logging.debug(self.serial_connection.name + " serial Receive thread started")
+        self.serial_connection.timeout = 0.1
         while not self._stop_flag:
-            received_char_code = self.serial_connection.read()[0]
+            received_data = self.serial_connection.read()
+            if len(received_data) == 0:
+                continue
+            else:
+                received_char_code = received_data[0]
             received_char = chr(received_char_code)
 
             # Echo Ignoring
@@ -132,7 +137,7 @@ class BoardBus(threading.Thread):
         logging.debug(self.serial_connection.name + " serial Sending thread stopped")
 
     def run(self):
-        logging.info(self.serial_connection.name + " serial Process thread started")
+        logging.debug(self.serial_connection.name + " serial Process thread started")
         self._stop_flag = False
         #Start SEND/RECEIVE threads
         for thread in self.threads:
@@ -145,7 +150,7 @@ class BoardBus(threading.Thread):
                 pass
             else:
                 self._process_response(response)
-        logging.info(self.serial_connection.name + " serial Process thread stopped")
+        logging.debug(self.serial_connection.name + " serial Process thread stopped")
 
     def join(self, timeout=None):
         """
@@ -298,7 +303,7 @@ class BoardBus(threading.Thread):
             try:
                 logging.debug("Board debug: ID={id} Data=\"{data}\"".format(**response))
             except KeyError:
-                logging.exception("debug response didn't have ID or Data. response={}".format(response))
+                logging.error("debug response didn't have ID or Data. response={}".format(response))
 
         else:
             logging.error("UNKNOWN RESPONSE CODE. Response={}".format(response))
