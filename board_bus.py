@@ -66,6 +66,9 @@ class BoardBus(threading.Thread):
         t = threading.Thread(target=self._run_sending_thread, name="{} Send".format(self.serial_connection.name))
         self.threads.append(t)
 
+        #FOR DEBUGGING:
+        self.reset_id_all()
+
     def _run_receiving_thread(self):
         """
         This reads serial port byte-by-byte and puts received responses into self._responses
@@ -233,6 +236,14 @@ class BoardBus(threading.Thread):
         return board
 
     @staticmethod
+    def _delayed_function_call(delay, function, args=None):
+        time.sleep(delay)
+        if args is None:
+            function()
+        else:
+            function(*args)
+
+    @staticmethod
     def _numpy_to_input_list(np_list):
         input_list = []
         reverse = False
@@ -266,16 +277,22 @@ class BoardBus(threading.Thread):
                 self.assign_board_seq_no(new_board)
 
         elif response['code'] == Board.Command.sensor_data:
-            self.fps["Sensor response"].cycle_complete()
-            for board in self.boards:
-                if board.id == response["id"]:
-                    try:
-                        board.set_sensor_value(int(response["data"]))
-                    except ValueError:
-                        logging.exception("Setting sensor value failed. response=".format(response))
-                    break
+            try:
+                _ = response["id"]
+                _ = response["data"]
+            except KeyError:
+                logging.error("Received sensor data without id or data. \"{}\". ".format(response))
             else:
-                logging.error("Received sensor data from unknown board. id={id} data=\"{data}\"".format(**response))
+                self.fps["Sensor response"].cycle_complete()
+                for board in self.boards:
+                    if board.id == response["id"]:
+                        try:
+                            board.set_sensor_value(int(response["data"]))
+                        except ValueError:
+                            logging.exception("Setting sensor value failed. response=".format(response))
+                        break
+                else:
+                    logging.error("Received sensor data from unknown board. \"{}\".".format(response))
 
         elif response['code'] == Board.Command.debug:
             try:
@@ -338,8 +355,8 @@ class BoardBus(threading.Thread):
             logging.error("Unable to assign ID to board: There are more boards than assignations.")
         else:
             self._broadcast_board.assign_board_id(board_id)
-            # TODO: Re enumerate after a delay (measure how long board takes to return to normal state)
-            self._broadcast_board.ping()
+            #Re enumerate after a delay
+            threading.Thread(target=self._delayed_function_call, args=(0.1, self.ping_all)).start()
 
     def _assign_board_seq_no(self, board):
         board.assign_sequence_number(self.next_sequence_no)
