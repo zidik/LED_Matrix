@@ -65,7 +65,14 @@ class Board:
         Args:
             sequence_number: new sequence number for board
         """
-        self._send_command(Board.Command.offer_sequence_number, bytearray([sequence_number]))
+        #Sequence is sent in values between 64 and 127 (these are not used for commands or id's
+        #encoded_sequence_number = list()
+        #while sequence_number > 0:
+        #    encoded_sequence_number.append(sequence_number & 0b00111111)
+        #    sequence_number >>= 6
+        encoded_sequence_number = [(sequence_number & 0b00111111) + 64, ((sequence_number >> 6) & 0b00111111) + 64]
+
+        self._send_command(Board.Command.offer_sequence_number, bytearray(encoded_sequence_number))
         logging.debug("Assigned board id={} sequence number {}".format(self.id, sequence_number))
 
     def ping(self):

@@ -89,7 +89,7 @@ void loop() {
 		///
 		*/
 
-		
+
 		switch (cmd_buffer[cmd_index]) {
 		case (char)LedData:
 			set_serial_mode(Off);
@@ -109,7 +109,8 @@ void loop() {
 			int resultADC = analogRead(2); //Takes about 100microseconds
 			uint16_t slotTime = 500; // time in microseconds given for each board on bus
 			//each responds in order, delaying proportionally to it's Sequence No
-			while (micros() - startTime < (uint16_t)busSeqNo * slotTime){}
+			unsigned long sendTime = (unsigned long)busSeqNo * slotTime + 100; //analogRead takes ~100us
+			while (micros() - startTime < sendTime){} //Wait here until
 			set_serial_mode(Send);
 			Serial << (char)boardID << resultADC << (char)SensorData;
 			Serial.flush();
@@ -121,15 +122,14 @@ void loop() {
 			if (cmd_index != 3)
 				break;
 
-			if (
-				cmd_buffer[0] == 'R' &&
-				cmd_buffer[1] == 'S' &&
-				cmd_buffer[2] == 'T'
-				){
+			if (cmd_buffer[0] != 'R' ||
+				cmd_buffer[1] != 'S' ||
+				cmd_buffer[2] != 'T' )
+				break;
 
-				boardID = BROADCAST_ID;
-				saveBoardID();
-			}
+			boardID = BROADCAST_ID;
+			saveBoardID();
+			busSeqNo = 255;
 			break;
 
 		case (char)OfferID:
@@ -173,17 +173,18 @@ void loop() {
 			break;
 
 		case (char)OfferSeqNo:
-			busSeqNo = cmd_buffer[1];
-			/*
-			//DEBUG
-			set_serial_mode(Send);
-			Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("RECEIVED!") << (uint8_t)cmd_buffer[0] << " " << (uint8_t)cmd_buffer[1] << " " << (uint8_t)cmd_buffer[2] << " " << (uint8_t)cmd_buffer[3] << cmd_index << (char)DebugData;
-			Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("RECEIVED SEQ NO") << busSeqNo << (char)DebugData;
-			Serial.flush();
-			set_serial_mode(Receive);
-			///
-			*/
+			busSeqNo = cmd_buffer[0] & B00111111;
+			busSeqNo += /*(uint16_t)*/(cmd_buffer[1] & B00111111) << 6;
 			
+			//DEBUG
+			//set_serial_mode(Send);
+			//Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("RECEIVED!") << (uint8_t)cmd_buffer[0] << " " << (uint8_t)cmd_buffer[1] << " " << (uint8_t)cmd_buffer[2] << " " << (uint8_t)cmd_buffer[3] << cmd_index << (char)DebugData;
+			//Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("RECEIVED SEQ NO") << busSeqNo << (char)DebugData;
+			//Serial.flush();
+			//set_serial_mode(Receive);
+			///
+			
+
 			break;
 		}
 		cmd_complete = false;
