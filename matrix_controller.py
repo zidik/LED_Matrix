@@ -109,6 +109,8 @@ class MatrixController:
         Loop that advances the game/animation
         """
         fps = MatrixController.data_update_FPS
+        if fps == 0:
+            return
         update_period = 1.0 / fps
 
         next_update = time.time()
