@@ -130,6 +130,8 @@ class BoardBus(threading.Thread):
                     time.sleep((self.silence_until - time.time()) % 0.1)  # sleep 100ms max
                 command(*args)
 
+        time.sleep(0.1) # wait for boards to start listening (finish their led refresh)
+
         #Sleep until silence is over
         while self.silence_until > time.time():
             time.sleep((self.silence_until - time.time()) % 0.1)  # sleep 100ms max
@@ -241,6 +243,7 @@ class BoardBus(threading.Thread):
         return board
 
     @staticmethod
+    # TODO: MAY BE REMOVED?
     def _delayed_function_call(delay, function, args=None):
         time.sleep(delay)
         if args is None:
@@ -275,7 +278,8 @@ class BoardBus(threading.Thread):
         elif response['code'] == Board.Command.pong:
             for board in self.boards:
                 if board.id == response["id"]:
-                    logging.warning("This board is already enumerated.")
+                    logging.debug("Board {} is already enumerated.".format(response["id"]))
+                    break
             else:  # We have found a board not currently known
                 logging.info("Board found: id={id}".format(**response))
                 new_board = self._new_board(response["id"])
@@ -308,6 +312,9 @@ class BoardBus(threading.Thread):
         else:
             logging.error("UNKNOWN RESPONSE CODE. Response={}".format(response))
 
+    def _be_silent_next_us(self, us):
+        self.silence_until = max(self.silence_until, time.time() + (us / 1000) / 1000)
+
     #
     # Methods below this line send data to serial bus:
     # They must ONLY be called from BoardBus thread.
@@ -328,9 +335,12 @@ class BoardBus(threading.Thread):
     def _reset_id(board):
         board.reset_id()
 
-    @staticmethod
-    def _ping(board):
+    def _ping(self, board):
         board.ping()
+        slot_time = 500  # Time for each board in microseconds #TODO: ADJUST THIS
+        additional_time = 100  # for safety?
+        number_of_boards = len(BoardBus.board_assignment)
+        self._be_silent_next_us(number_of_boards * slot_time + additional_time)
 
     def _refresh_leds(self):
         for board in self.boards:
@@ -346,10 +356,13 @@ class BoardBus(threading.Thread):
         NB! sensor readings are being buffered in hardware(Bus converter)
         this causes some of data to be read out next cycle
         """
+        time.sleep(0.01) #TODO: This has to be as long as one board sleeping
         self._broadcast_board.read_sensor()
         number_of_boards = self.next_sequence_no
         slot_time = 500  # Time for each board in microseconds #TODO: ADJUST THIS
-        self.silence_until = time.time() + (math.ceil(number_of_boards * slot_time) / 1000) / 1000
+        adc_time = 100  # time for waiting all boards to take adc measurement
+        additional_time = 100  # for safety?
+        self._be_silent_next_us(number_of_boards * slot_time + adc_time + additional_time)
         self.fps["Sensor poll"].cycle_complete()
         self._read_sensors_flag = False
 
@@ -360,8 +373,10 @@ class BoardBus(threading.Thread):
             logging.error("Unable to assign ID to board: There are more boards than assignations.")
         else:
             self._broadcast_board.assign_board_id(board_id)
+            self._be_silent_next_us(500) #Board will ask for sequence number
             #Re enumerate after a delay
-            threading.Thread(target=self._delayed_function_call, args=(0.1, self.ping_all)).start()
+            time.sleep(0.01)    # TODO: Adjust this
+            self.ping_all()     # TODO: Maybe ping only one
 
     def _assign_board_seq_no(self, board):
         board.assign_sequence_number(self.next_sequence_no)
