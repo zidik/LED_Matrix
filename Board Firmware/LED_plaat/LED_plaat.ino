@@ -92,6 +92,10 @@ void loop() {
 
 		switch (cmd_buffer[cmd_index]) {
 		case (char)LedData:
+			// This is needed to keep board from being unavailable while master is not yet sent bus sequence number
+			if (busSeqNo == 255)
+				break;
+
 			set_serial_mode(Off);
 			setPixels((uint8_t*)cmd_buffer);
 			led_matrix.show();

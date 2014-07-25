@@ -357,7 +357,7 @@ class BoardBus(threading.Thread):
         NB! sensor readings are being buffered in hardware(Bus converter)
         this causes some of data to be read out next cycle
         """
-        time.sleep(0.01) #TODO: This has to be as long as one board sleeping
+        time.sleep(0.01)  # TODO: This has to be as long as one board sleeping
         self._broadcast_board.read_sensor()
         number_of_boards = self.next_sequence_no
         slot_time = 400  # Time for each board in microseconds #TODO: ADJUST THIS
