@@ -107,10 +107,10 @@ void loop() {
 
 			unsigned long startTime = micros();
 			int resultADC = analogRead(2); //Takes about 100microseconds
-			uint16_t slotTime = 500; // time in microseconds given for each board on bus
+			uint16_t slotTime = 400; // time in microseconds given for each board on bus
 			//each responds in order, delaying proportionally to it's Sequence No
 			unsigned long sendTime = (unsigned long)busSeqNo * slotTime + 100; //analogRead takes ~100us
-			while (micros() - startTime < sendTime){} //Wait here until
+			while (micros() - startTime < sendTime){} //Wait here for your turn to speak
 			set_serial_mode(Send);
 			Serial << (char)boardID << resultADC << (char)SensorData;
 			Serial.flush();
@@ -161,15 +161,19 @@ void loop() {
 			break;
 
 		case (char)PingFromMaster:
-			set_serial_mode(Off);
-			//TODO: Board does not need to wait, if it was an UNICAST
-			//each board responds to a ping in order, delaying proportionally to it's ID
-			delayMicroseconds((boardID - 128) * 500 + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
-			set_serial_mode(Send);
-			Serial << (char)boardID << (char)PongToMaster;
-			Serial.flush();
-			while (Serial.available()) { Serial.read(); }
-			set_serial_mode(Receive);
+			{
+				set_serial_mode(Off);
+				//TODO: Board does not need to wait, if it was an UNICAST
+				//each board responds to a ping in order, delaying proportionally to it's ID
+				//TODO: speedup ping by reducing slot time
+				uint16_t slotTime = 300; // time in microseconds given for each board on bus
+				delayMicroseconds((boardID - 128) * slotTime + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
+				set_serial_mode(Send);
+				Serial << (char)boardID << (char)PongToMaster;
+				Serial.flush();
+				while (Serial.available()) { Serial.read(); }
+				set_serial_mode(Receive);
+			}
 			break;
 
 		case (char)OfferSeqNo:
@@ -192,7 +196,7 @@ void loop() {
 	//IF no board ID is set (it is the same as BC_ID) then just wait for buttonpress
 	if (boardID == BROADCAST_ID){
 		//if request has just been sent don't get stuck here again for a while
-		if (last_id_request_time + 100 < millis() || last_id_request_time == 0){
+		if (last_id_request_time + 200 < millis() || last_id_request_time == 0){
 			set_serial_mode(Off);
 			//Inform user, that we are waiting for push
 			fillPixels(led_matrix.Color(60, 0, 0));

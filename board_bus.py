@@ -337,10 +337,11 @@ class BoardBus(threading.Thread):
 
     def _ping(self, board):
         board.ping()
-        slot_time = 500  # Time for each board in microseconds #TODO: ADJUST THIS
-        additional_time = 100  # for safety?
+        slot_time = 300  # Time for each board in microseconds #TODO: ADJUST THIS
+        #TODO: Reduce this
+        additional_time = slot_time*0.05  # for clock diff
         number_of_boards = len(BoardBus.board_assignment)
-        self._be_silent_next_us(number_of_boards * slot_time + additional_time)
+        self._be_silent_next_us(number_of_boards * (slot_time + additional_time))
 
     def _refresh_leds(self):
         for board in self.boards:
@@ -359,10 +360,11 @@ class BoardBus(threading.Thread):
         time.sleep(0.01) #TODO: This has to be as long as one board sleeping
         self._broadcast_board.read_sensor()
         number_of_boards = self.next_sequence_no
-        slot_time = 500  # Time for each board in microseconds #TODO: ADJUST THIS
+        slot_time = 400  # Time for each board in microseconds #TODO: ADJUST THIS
+        #TODO: Reduce this
+        additional_time = slot_time*0.05  # for clock diff
         adc_time = 100  # time for waiting all boards to take adc measurement
-        additional_time = 100  # for safety?
-        self._be_silent_next_us(number_of_boards * slot_time + adc_time + additional_time)
+        self._be_silent_next_us(number_of_boards * (slot_time + additional_time) + adc_time)
         self.fps["Sensor poll"].cycle_complete()
         self._read_sensors_flag = False
 
@@ -373,10 +375,9 @@ class BoardBus(threading.Thread):
             logging.error("Unable to assign ID to board: There are more boards than assignations.")
         else:
             self._broadcast_board.assign_board_id(board_id)
-            self._be_silent_next_us(500) #Board will ask for sequence number
             #Re enumerate after a delay
-            time.sleep(0.01)    # TODO: Adjust this
-            self.ping_all()     # TODO: Maybe ping only one
+            time.sleep(0.1)    # TODO: Adjust this
+            self._ping(self._broadcast_board) # TODO: Maybe ping only one
 
     def _assign_board_seq_no(self, board):
         board.assign_sequence_number(self.next_sequence_no)
