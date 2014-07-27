@@ -159,7 +159,7 @@ class Board:
         """
         #TODO: GET A VIEW?
         arr = numpy.copy(led_value_array)
-        arr[1::2] = arr[1::2] = arr[1::2, ::-1]  # Reverse direction of every second row
+        arr[1::2] = arr[1::2, ::-1]  # Reverse direction of every second row
         values = arr.ravel()  # Change to one long array
         values >>= 5
         # Sum every pair of elements (with second element rolled) and add required bit
