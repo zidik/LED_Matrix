@@ -1,12 +1,43 @@
+import heapq
+
 __author__ = 'Mark Laane'
 import threading
 import logging
 import time
 import queue
-import math
+import numpy
 
 from ledBoard import Board, BROADCAST_ADDRESS
 from fpsManager import FpsManager
+
+
+class IdPool():
+    def __init__(self):
+        self._lock = threading.RLock()
+        self._pool = []
+
+    def pop(self):
+        with self._lock:
+            board_id = heapq.heappop(self._pool)
+        return board_id
+
+    def push(self, board_id):
+        with self._lock:
+            if board_id not in self._pool:
+                heapq.heappush(self._pool, board_id)
+            else:
+                logging.debug("id={} already in pool".format(board_id))
+
+    def remove(self, board_id):
+        with self._lock:
+            try:
+                self._pool.remove(board_id)
+            except ValueError:
+                pass
+            else:
+                heapq.heapify(self._pool)  # If we removed an element, lets turn it back to heap again
+
+
 
 
 class BoardBus(threading.Thread):
@@ -15,9 +46,12 @@ class BoardBus(threading.Thread):
     Bus maintains all boards connected to it by one serial connection.
     Each bus has it's own thread.
     """
+    # TODO: This has to be as long as one board can be busy doing something
+    board_busy_time = 0.01 # Maximum amount of time board can be busy (for example rendering image)
 
     board_assignment = []
-    _id_pool = queue.PriorityQueue()
+
+    _id_pool3 = IdPool()
 
     @staticmethod
     def add_assignation(board_id, x, y):
@@ -25,7 +59,7 @@ class BoardBus(threading.Thread):
         Adds assignation to a list so bus knows what part of image data to send to board with specified ID. (when found)
         """
         BoardBus.board_assignment.append([board_id, x, y])
-        BoardBus._id_pool.put_nowait(board_id)
+        BoardBus._id_pool3.push(board_id)
 
     def __init__(self, serial_connection, data):
         super().__init__()
@@ -65,6 +99,8 @@ class BoardBus(threading.Thread):
         self.threads.append(t)
         t = threading.Thread(target=self._run_sending_thread, name="{} Send".format(self.serial_connection.name))
         self.threads.append(t)
+
+        self.request_info()
 
     def _run_receiving_thread(self):
         """
@@ -224,6 +260,12 @@ class BoardBus(threading.Thread):
         """
         self._command_queue.put_nowait((self._assign_board_seq_no, [value]))
 
+    def request_info(self):
+        """
+        Signals thread to request info next cycle
+        """
+        self._command_queue.put_nowait((self._request_info, []))
+
 
     def _new_board(self, board_id):
         board = None
@@ -238,15 +280,6 @@ class BoardBus(threading.Thread):
             logging.warning("Assignment for board {} not found".format(board_id))
 
         return board
-
-    @staticmethod
-    # TODO: MAY BE REMOVED?
-    def _delayed_function_call(delay, function, args=None):
-        time.sleep(delay)
-        if args is None:
-            function()
-        else:
-            function(*args)
 
     def _process_response(self, response):
         """
@@ -264,6 +297,10 @@ class BoardBus(threading.Thread):
                     break
             else:  # We have found a board not currently known
                 logging.info("Board found: id={id}".format(**response))
+                try:
+                    BoardBus._id_pool3.remove(response["id"])
+                except ValueError:
+                    pass
                 new_board = self._new_board(response["id"])
                 self.assign_board_seq_no(new_board)
 
@@ -284,6 +321,11 @@ class BoardBus(threading.Thread):
                         break
                 else:
                     logging.error("Received sensor data from unknown board. \"{}\".".format(response))
+        elif response['code'] == Board.Command.info:
+            try:
+                logging.debug("Board info: ID={id} version=\"{data}\"".format(**response))
+            except KeyError:
+                logging.error("Info response did not contain id or data. response={}".format(response))
 
         elif response['code'] == Board.Command.debug:
             try:
@@ -308,18 +350,18 @@ class BoardBus(threading.Thread):
         """
         Turns off all LED's on all boards on the bus
         """
-        input_list = 100 * 3 * [0]
+        input_list = numpy.zeros((10, 10, 3), dtype=numpy.uint8)
         # TODO: test if still needed
         for i in range(2):  # Hack to ensure turning boards off in the end. Not really sure, why does it work.
             self._broadcast_board.refresh_leds(input_list)
 
 
     def _reset_id(self, board):
-        time.sleep(0.01)  # TODO: This has to be as long as one board can be busy doing something
+        time.sleep(BoardBus.board_busy_time)
         board.reset_id()
         if board == self._broadcast_board:
             for board in self.boards:
-                BoardBus._id_pool.put_nowait(board.id)
+                BoardBus._id_pool3.push(board.id)
             self.boards = []
         else:
             try:
@@ -327,7 +369,7 @@ class BoardBus(threading.Thread):
             except ValueError:
                 logging.exception("Reset sent to board which was not in boards list")
             else:
-                BoardBus._id_pool.put_nowait(board.id)
+                BoardBus._id_pool3.push(board.id)
 
 
     def _ping(self, board):
@@ -351,7 +393,7 @@ class BoardBus(threading.Thread):
         NB! sensor readings are being buffered in hardware(Bus converter)
         this causes some of data to be read out next cycle
         """
-        time.sleep(0.01)  # TODO: This has to be as long as one board sleeping
+        time.sleep(BoardBus.board_busy_time)
         self._broadcast_board.read_sensor()
         number_of_boards = self.next_sequence_no
         slot_time = 400  # Time for each board in microseconds #TODO: ADJUST THIS
@@ -364,15 +406,20 @@ class BoardBus(threading.Thread):
 
     def _assign_board_id(self):
         try:
-            board_id = BoardBus._id_pool.get_nowait()
-        except queue.Empty:
-            logging.error("Unable to assign ID to board: There are more boards than assignations.")
+            board_id = BoardBus._id_pool3.pop()
+            #TODO: ID Should be put back, if board does not get it?
+        except IndexError:
+            logging.error("Unable to assign ID to board: ID pool is empty.")
         else:
             self._broadcast_board.assign_board_id(board_id)
             #Re enumerate after a delay
-            time.sleep(0.1)    # TODO: Adjust this
-            self._ping(self._broadcast_board) # TODO: Maybe ping only one
+            time.sleep(BoardBus.board_busy_time)
+            self._ping(self._broadcast_board)  # TODO: Maybe ping only one
 
     def _assign_board_seq_no(self, board):
         board.assign_sequence_number(self.next_sequence_no)
         self.next_sequence_no += 1
+
+    def _request_info(self):
+        time.sleep(BoardBus.board_busy_time)
+        self._broadcast_board.request_info()

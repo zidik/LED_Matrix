@@ -2,6 +2,7 @@ __author__ = 'Mark'
 
 from enum import Enum, unique
 import logging
+import numpy
 
 BROADCAST_ADDRESS = 255
 
@@ -17,6 +18,7 @@ class Board:
         request_id = 0x02
         pong = 0x05
         sensor_data = 0x12
+        info = 0x1E
         debug = 0x1F
 
         # From Master to Board
@@ -26,6 +28,7 @@ class Board:
         offer_sequence_number = 0x06
         send_led_data = 0x10
         request_sensor = 0x11
+        request_info = 0x1D
 
     def __init__(self, board_id, serial_connection, column=None, row=None):
         self.id = board_id
@@ -99,6 +102,13 @@ class Board:
         """
         self._send_command(Board.Command.request_sensor)
 
+    def request_info(self):
+        """
+        Sends out command for board to answer with it's version string and other info
+        """
+        logging.debug("Requesting info from boards on " + self.serial_connection.name)
+        self._send_command(Board.Command.request_info)
+
     def _send_command(self, command, data=None):
         """
         Sends command with board's ID and command code.
@@ -144,34 +154,14 @@ class Board:
     @staticmethod
     def led_encoder(led_value_array):
         """
-        Converts list of led brightness values to serial data
-        arg: list of led values [R,G,B,R,G,B, ..... ] limited to 3 bits (values 0-7)
-        ret: bytearray, which can be sent directly with Serial.write()
+        @param led_value_array: numpy array of displayed image
+        @return: bytes, which can be sent directly to serial.write()
         """
-        output_byte = 0
-        output = []
-        byte_side = 1
-        reverse = False
-        number_of_elements = len(led_value_array[0][0])*len(led_value_array[0])*len(led_value_array)
-        current_element_no = 0
-        for row in led_value_array:
-            if reverse:
-                row = row[::-1]
-            for cell in row:
-                for color_element in cell:
-                    value = color_element >> 5
-                    value &= 0b00000111  # Limit input TODO:Warn before limiting
-                    if byte_side == 1:
-                        output_byte = 0b01000000
-                        output_byte += (value << 3)
-                        byte_side = 2
-                        if current_element_no == number_of_elements - 1:
-                            output.append(output_byte)
-                    else:
-                        output_byte += value
-                        byte_side = 1
-                        output.append(output_byte)
-                    current_element_no +=1
-
-            reverse = not reverse
-        return bytearray(output)
+        #TODO: GET A VIEW?
+        arr = numpy.copy(led_value_array)
+        arr[1::2] = arr[1::2] = arr[1::2, ::-1]  # Reverse direction of every second row
+        values = arr.ravel()  # Change to one long array
+        values >>= 5
+        # Sum every pair of elements (with second element rolled) and add required bit
+        output_array = (values[::2] << 3) + values[1::2] + (1 << 6)
+        return output_array.tostring()
