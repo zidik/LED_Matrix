@@ -10,11 +10,15 @@ enum Command
 	OfferSeqNo     = 0x06, //Master is offering a Bus Sequence Number
 	LedData        = 0x10, //Master sends data to LED's
 	ReqSensor      = 0x11, //Master requests current sensor value
+
+	ReqInfo        = 0x1D, //Master requests information about board (version number, id etc.)
 	
 	// From Board to Master
 	RequestID      = 0x02, //Board requests ID from Master
 	PongToMaster   = 0x05, //Board responds to Master's ping
 	SensorData     = 0x12, //Board sends sensor value to Master
+
+	Info           = 0x1E, //Board sends information about itself (version number, id etc.)
 	DebugData      = 0x1F, //Board sends debug data to master
 
 };
