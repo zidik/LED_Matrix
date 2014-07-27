@@ -42,12 +42,17 @@ def main():
     root = None
     if gui_enabled:
         ### Starting up GUI
-        root = tkinter.Tk()
-        root.geometry("302x750+50+50")
-        root.title("LED control panel")
-        app = GUIapp(root, game_controller)
-        # Matrix controller will trigger GUI update when data changes
-        matrix_controller.connect("data_update", app.update)
+        try:
+            root = tkinter.Tk()
+        except tkinter.TclError:
+            logging.warning("Could not initialise Tk class - Disabling GUI")
+            gui_enabled = False
+        else:
+            root.geometry("302x750+50+50")
+            root.title("LED control panel")
+            app = GUIapp(root, game_controller)
+            # Matrix controller will trigger GUI update when data changes
+            matrix_controller.connect("data_update", app.update)
 
     game_controller.set_game_mode(GameController.Mode.test)
 
