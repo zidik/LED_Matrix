@@ -15,20 +15,23 @@ def configure_all(config):
     conf_catch_colors(config["Catch Colors"])
     conf_catch_colors_multi(config["Catch Colors Multiplayer"])
 
-
-def csv_to_int_list(csv_string):
+def csv_to_list(csv_string):
     if csv_string == '':
         return []
     else:
-        return [int(x.strip()) for x in csv_string.split(',')]
+        return [x.strip() for x in csv_string.split(',')]
 
 
-def csv_to_float_list(color_string):
-    return [float(x.strip()) for x in color_string.split(',')]
+def csv_to_int_list(csv_string):
+    return [int(x) for x in csv_to_list(csv_string)]
+
+
+def csv_to_float_list(csv_string):
+    return [float(x) for x in csv_to_list(csv_string)]
 
 
 def conf_matrix(conf):
-    MatrixController.serial_ports = csv_to_int_list(conf["Serial ports"])
+    MatrixController.serial_ports = csv_to_list(conf["Serial ports"])
     MatrixController.data_update_FPS = float(conf["Data Update FPS"])
     MatrixController.sensor_update_FPS = float(conf["Serial Update FPS"])
     MatrixController.dimensions = int(conf["Width"]), int(conf["Height"])
