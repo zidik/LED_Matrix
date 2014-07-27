@@ -142,7 +142,7 @@ class Board:
             return False
 
     @staticmethod
-    def led_encoder(led_values):
+    def led_encoder(led_value_array):
         """
         Converts list of led brightness values to serial data
         arg: list of led values [R,G,B,R,G,B, ..... ] limited to 3 bits (values 0-7)
@@ -151,17 +151,27 @@ class Board:
         output_byte = 0
         output = []
         byte_side = 1
-        for i in range(len(led_values)):
-            value = led_values[i]
-            value &= 0b00000111  # Limit input TODO:Warn before limiting
-            if byte_side == 1:
-                output_byte = 0b01000000
-                output_byte += (value << 3)
-                byte_side = 2
-                if i == len(led_values) - 1:
-                    output.append(output_byte)
-            else:
-                output_byte += value
-                byte_side = 1
-                output.append(output_byte)
+        reverse = False
+        number_of_elements = len(led_value_array[0][0])*len(led_value_array[0])*len(led_value_array)
+        current_element_no = 0
+        for row in led_value_array:
+            if reverse:
+                row = row[::-1]
+            for cell in row:
+                for color_element in cell:
+                    value = color_element >> 5
+                    value &= 0b00000111  # Limit input TODO:Warn before limiting
+                    if byte_side == 1:
+                        output_byte = 0b01000000
+                        output_byte += (value << 3)
+                        byte_side = 2
+                        if current_element_no == number_of_elements - 1:
+                            output.append(output_byte)
+                    else:
+                        output_byte += value
+                        byte_side = 1
+                        output.append(output_byte)
+                    current_element_no +=1
+
+            reverse = not reverse
         return bytearray(output)

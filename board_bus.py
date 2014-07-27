@@ -251,21 +251,6 @@ class BoardBus(threading.Thread):
         else:
             function(*args)
 
-    @staticmethod
-    def _numpy_to_input_list(np_list):
-        input_list = []
-        reverse = False
-        for row in np_list:
-            if reverse:
-                row = (list(row[::-1]))
-            else:
-                row = (list(row))
-            for cell in row:
-                for color_element in cell:
-                    input_list.append(color_element >> 5)
-            reverse = not reverse
-        return input_list
-
     def _process_response(self, response):
         """
         Processes one response from queue
@@ -346,8 +331,7 @@ class BoardBus(threading.Thread):
     def _refresh_leds(self):
         for board in self.boards:
             numpy_input = self.data[board.row * 10:board.row * 10 + 10, board.column * 10:board.column * 10 + 10]
-            input_list = self._numpy_to_input_list(numpy_input)
-            board.refresh_leds(input_list)
+            board.refresh_leds(numpy_input)
         self.fps["LED update"].cycle_complete()
         # TODO: TEST with next line commented (possible bug seen with one board)
         self._update_display_flag = False
