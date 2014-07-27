@@ -13,7 +13,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 #define LED_PIN        11  // Pin the LEDs are attached to
 #define BUFFER_SIZE   300  // Buffer for commands coming from serial
 
-#define VERSIONSTRING F("0.9.0")
+#define VERSIONSTRING F("0.9.1")
 
 
 
