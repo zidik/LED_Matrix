@@ -66,8 +66,11 @@ def main():
             ### MAIN LOOP when gui is disabled
             run = True
             while run:
-                if input("Type 'q' to stop.\n") == "q":
+                user_input = input("Type 'q' to stop or 'reset id' to reset all ID's.\n")
+                if user_input == "q":
                     run = False
+                elif user_input == "reset id":
+                    matrix_controller.reset_id_all()
         except KeyboardInterrupt:
             logging.info("Keyboard interrupt received.")
 

@@ -17,7 +17,7 @@ class BoardBus(threading.Thread):
     """
 
     board_assignment = []
-    _id_pool = queue.Queue()
+    _id_pool = queue.PriorityQueue()
 
     @staticmethod
     def add_assignation(board_id, x, y):
@@ -65,9 +65,6 @@ class BoardBus(threading.Thread):
         self.threads.append(t)
         t = threading.Thread(target=self._run_sending_thread, name="{} Send".format(self.serial_connection.name))
         self.threads.append(t)
-
-        #FOR DEBUGGING:
-        self.reset_id_all()
 
     def _run_receiving_thread(self):
         """
@@ -316,9 +313,22 @@ class BoardBus(threading.Thread):
         for i in range(2):  # Hack to ensure turning boards off in the end. Not really sure, why does it work.
             self._broadcast_board.refresh_leds(input_list)
 
-    @staticmethod
-    def _reset_id(board):
+
+    def _reset_id(self, board):
+        time.sleep(0.01)  # TODO: This has to be as long as one board can be busy doing something
         board.reset_id()
+        if board == self._broadcast_board:
+            for board in self.boards:
+                BoardBus._id_pool.put_nowait(board.id)
+            self.boards = []
+        else:
+            try:
+                self.boards.remove(board)
+            except ValueError:
+                logging.exception("Reset sent to board which was not in boards list")
+            else:
+                BoardBus._id_pool.put_nowait(board.id)
+
 
     def _ping(self, board):
         board.ping()
