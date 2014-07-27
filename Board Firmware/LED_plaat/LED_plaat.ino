@@ -13,6 +13,8 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 #define LED_PIN        11  // Pin the LEDs are attached to
 #define BUFFER_SIZE   300  // Buffer for commands coming from serial
 
+#define VERSIONSTRING F("0.9.2")
+
 
 
 // common colors for convinience
@@ -73,6 +75,16 @@ void setup() {
 	set_serial_mode(Receive);
 	///
 	*/
+
+	fillPixels(led_matrix.Color(0xFF, 0x00, 0x00));
+	delay(700);
+	fillPixels(led_matrix.Color(0x00, 0xFF, 0x00));
+	delay(700);
+	fillPixels(led_matrix.Color(0x00, 0x00, 0xFF));
+	delay(700);
+	fillPixels(led_matrix.Color(0xFF, 0xFF, 0xFF));
+	delay(700);
+	fillPixels(led_matrix.Color(0x00, 0x00, 0x00));
 }
 
 
@@ -121,6 +133,19 @@ void loop() {
 			//Todo siia tyhjendamine?
 			set_serial_mode(Receive);
 		} break;
+
+		case (char)ReqInfo:{
+			set_serial_mode(Off);
+			//TODO: Board does not need to wait, if it was an UNICAST
+			uint16_t slotTime = 500; // time in microseconds given for each board on bus
+			delayMicroseconds((boardID - 128) * slotTime + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
+			set_serial_mode(Send);
+			Serial << (char)boardID << VERSIONSTRING << (char)Info;
+			Serial.flush();
+			while (Serial.available()) { Serial.read(); }
+			set_serial_mode(Receive);
+			}
+			break;
 
 		case (char)ResetID:
 			if (cmd_index != 3)
@@ -203,11 +228,11 @@ void loop() {
 		if (last_id_request_time + 200 < millis() || last_id_request_time == 0){
 			set_serial_mode(Off);
 			//Inform user, that we are waiting for push
-			fillPixels(led_matrix.Color(60, 0, 0));
+			fillPixels(led_matrix.Color(40, 0, 0));
 			//Wait until button is pressed
 			while (analogRead(2) < 100){}
-			//Infor user, that push has been registred
-			fillPixels(led_matrix.Color(0, 0, 128));
+			//Inform user, that push has been registred
+			fillPixels(led_matrix.Color(40, 40, 40));
 			last_id_request_time = millis();
 			boardID_requested = true;
 			set_serial_mode(Send);

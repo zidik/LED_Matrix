@@ -217,6 +217,10 @@ class MatrixController:
 
         logging.debug("Thread \"{}\" stopped".format(threading.current_thread().name))
 
+    def reset_id_all(self):
+        for bus in self.board_buses:
+            bus.reset_id_all()
+
     def _signal_update_boards(self):
         """
         Signals all buses to refresh data displayed on boards

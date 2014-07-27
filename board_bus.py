@@ -1,12 +1,43 @@
+import heapq
+
 __author__ = 'Mark Laane'
 import threading
 import logging
 import time
 import queue
-import math
+import numpy
 
 from ledBoard import Board, BROADCAST_ADDRESS
 from fpsManager import FpsManager
+
+
+class IdPool():
+    def __init__(self):
+        self._lock = threading.RLock()
+        self._pool = []
+
+    def pop(self):
+        with self._lock:
+            board_id = heapq.heappop(self._pool)
+        return board_id
+
+    def push(self, board_id):
+        with self._lock:
+            if board_id not in self._pool:
+                heapq.heappush(self._pool, board_id)
+            else:
+                logging.debug("id={} already in pool".format(board_id))
+
+    def remove(self, board_id):
+        with self._lock:
+            try:
+                self._pool.remove(board_id)
+            except ValueError:
+                pass
+            else:
+                heapq.heapify(self._pool)  # If we removed an element, lets turn it back to heap again
+
+
 
 
 class BoardBus(threading.Thread):
@@ -16,8 +47,19 @@ class BoardBus(threading.Thread):
     Each bus has it's own thread.
     """
 
+    # Maximum amount of time board can be busy (for example rendering image)
+
+
+    # I perfected it by setting sensor_update and data_update FPS to 100 (more than possible)
+    # Then I put one probe on RS-bus and other on MCU LED-data output.
+    # Then adjusted value so that next sensor poll would not overlap LED'data output.
+    led_data_transfertime = 3.2     # Measured one packet transfer time:
+    led_data_rendertime = 3         # Measured one render time: 3ms
+    led_data_time_to_render = 2.5   # Time from end of transfer to start of render: 2.5ms
+
     board_assignment = []
-    _id_pool = queue.Queue()
+
+    _id_pool3 = IdPool()
 
     @staticmethod
     def add_assignation(board_id, x, y):
@@ -25,7 +67,7 @@ class BoardBus(threading.Thread):
         Adds assignation to a list so bus knows what part of image data to send to board with specified ID. (when found)
         """
         BoardBus.board_assignment.append([board_id, x, y])
-        BoardBus._id_pool.put_nowait(board_id)
+        BoardBus._id_pool3.push(board_id)
 
     def __init__(self, serial_connection, data):
         super().__init__()
@@ -41,6 +83,10 @@ class BoardBus(threading.Thread):
         self.name = "{} Send".format(self.serial_connection.name)
 
         self._stop_flag = False  # event used to stop the threads
+        self.first_ping_is_complete = False  # Disable sensor polling until first ping is done
+
+        # These two flags can be counter-intuitive - True blocks new calls going in queue!
+        # these flags show whether call is already in queue (we only allow one of each)
         self._update_display_flag = False  # update is pending (is currently in queue)
         self._read_sensors_flag = False  # reading sensors is pending (is currently in queue)
 
@@ -58,6 +104,9 @@ class BoardBus(threading.Thread):
         self._responses = queue.Queue()
         self.current_response = {}
 
+        # Time when transfer should end (this is used when sending LED data because USB-uart bridge buffers data)
+        # This is set to estimate time when the transfer should end.
+        self.transfer_ends = time.time()
         self.silence_until = time.time()
 
         self.threads = []
@@ -66,8 +115,7 @@ class BoardBus(threading.Thread):
         t = threading.Thread(target=self._run_sending_thread, name="{} Send".format(self.serial_connection.name))
         self.threads.append(t)
 
-        #FOR DEBUGGING:
-        self.reset_id_all()
+        self.request_info()
 
     def _run_receiving_thread(self):
         """
@@ -126,15 +174,23 @@ class BoardBus(threading.Thread):
                 pass
             else:
                 #Sleep until silence is over
-                while self.silence_until > time.time():
-                    time.sleep((self.silence_until - time.time()) % 0.1)  # sleep 100ms max
-                command(*args)
+                currtime = time.time()
+                while self.silence_until > currtime:
+                    time.sleep(self.silence_until - currtime)
+                    currtime = time.time()
 
-        time.sleep(0.1) # wait for boards to start listening (finish their led refresh)
+                command(*args)
+                if not self.first_ping_is_complete and command == self._ping:
+                    while self.silence_until > time.time():
+                        time.sleep(self.silence_until - time.time())
+                    self.first_ping_is_complete = True
+                    logging.debug("Initial ping is complete")
+
+
 
         #Sleep until silence is over
         while self.silence_until > time.time():
-            time.sleep((self.silence_until - time.time()) % 0.1)  # sleep 100ms max
+            time.sleep(self.silence_until - time.time())
         self._turn_off_boards()
         logging.debug(self.serial_connection.name + " serial Sending thread stopped")
 
@@ -181,6 +237,10 @@ class BoardBus(threading.Thread):
         """
         Signals thread to poll sensors on boards next cycle. (if not already scheduled)
         """
+        # When first ping is not complete disable reading sensors
+        if not self.first_ping_is_complete:
+            return
+
         if not self._read_sensors_flag:
             self._read_sensors_flag = True
             self._command_queue.put_nowait((self._read_sensors, []))
@@ -227,6 +287,12 @@ class BoardBus(threading.Thread):
         """
         self._command_queue.put_nowait((self._assign_board_seq_no, [value]))
 
+    def request_info(self):
+        """
+        Signals thread to request info next cycle
+        """
+        self._command_queue.put_nowait((self._request_info, []))
+
 
     def _new_board(self, board_id):
         board = None
@@ -241,30 +307,6 @@ class BoardBus(threading.Thread):
             logging.warning("Assignment for board {} not found".format(board_id))
 
         return board
-
-    @staticmethod
-    # TODO: MAY BE REMOVED?
-    def _delayed_function_call(delay, function, args=None):
-        time.sleep(delay)
-        if args is None:
-            function()
-        else:
-            function(*args)
-
-    @staticmethod
-    def _numpy_to_input_list(np_list):
-        input_list = []
-        reverse = False
-        for row in np_list:
-            if reverse:
-                row = (list(row[::-1]))
-            else:
-                row = (list(row))
-            for cell in row:
-                for color_element in cell:
-                    input_list.append(color_element >> 5)
-            reverse = not reverse
-        return input_list
 
     def _process_response(self, response):
         """
@@ -282,6 +324,10 @@ class BoardBus(threading.Thread):
                     break
             else:  # We have found a board not currently known
                 logging.info("Board found: id={id}".format(**response))
+                try:
+                    BoardBus._id_pool3.remove(response["id"])
+                except ValueError:
+                    pass
                 new_board = self._new_board(response["id"])
                 self.assign_board_seq_no(new_board)
 
@@ -302,6 +348,11 @@ class BoardBus(threading.Thread):
                         break
                 else:
                     logging.error("Received sensor data from unknown board. \"{}\".".format(response))
+        elif response['code'] == Board.Command.info:
+            try:
+                logging.debug("Board info: ID={id} version=\"{data}\"".format(**response))
+            except KeyError:
+                logging.error("Info response did not contain id or data. response={}".format(response))
 
         elif response['code'] == Board.Command.debug:
             try:
@@ -326,59 +377,88 @@ class BoardBus(threading.Thread):
         """
         Turns off all LED's on all boards on the bus
         """
-        input_list = 100 * 3 * [0]
-        # TODO: test if still needed
-        for i in range(2):  # Hack to ensure turning boards off in the end. Not really sure, why does it work.
-            self._broadcast_board.refresh_leds(input_list)
+        input_list = numpy.zeros((10, 10, 3), dtype=numpy.uint8)
+        self._broadcast_board.refresh_leds(input_list)
 
-    @staticmethod
-    def _reset_id(board):
+
+    def _reset_id(self, board):
         board.reset_id()
+        if board == self._broadcast_board:
+            for board in self.boards:
+                BoardBus._id_pool3.push(board.id)
+            self.boards = []
+        else:
+            try:
+                self.boards.remove(board)
+            except ValueError:
+                logging.exception("Reset sent to board which was not in boards list")
+            else:
+                BoardBus._id_pool3.push(board.id)
+
 
     def _ping(self, board):
         board.ping()
         slot_time = 300  # Time for each board in microseconds #TODO: ADJUST THIS
-        #TODO: Reduce this
-        additional_time = slot_time*0.05  # for clock diff
+        additional_time = 500  # for other delays
         number_of_boards = len(BoardBus.board_assignment)
         self._be_silent_next_us(number_of_boards * (slot_time + additional_time))
 
     def _refresh_leds(self):
         for board in self.boards:
             numpy_input = self.data[board.row * 10:board.row * 10 + 10, board.column * 10:board.column * 10 + 10]
-            input_list = self._numpy_to_input_list(numpy_input)
-            board.refresh_leds(input_list)
+            board.refresh_leds(numpy_input)
         self.fps["LED update"].cycle_complete()
         # TODO: TEST with next line commented (possible bug seen with one board)
         self._update_display_flag = False
+        self._be_silent_next_us(
+            (
+                len(self.boards)*BoardBus.led_data_transfertime +
+                BoardBus.led_data_rendertime +
+                BoardBus.led_data_time_to_render +
+                1# Just for safety/padding
+            )*1000
+        )
 
     def _read_sensors(self):
         """
         NB! sensor readings are being buffered in hardware(Bus converter)
         this causes some of data to be read out next cycle
         """
-        time.sleep(0.01)  # TODO: This has to be as long as one board sleeping
         self._broadcast_board.read_sensor()
         number_of_boards = self.next_sequence_no
-        slot_time = 400  # Time for each board in microseconds #TODO: ADJUST THIS
-        #TODO: Reduce this
-        additional_time = slot_time*0.05  # for clock diff
+        slot_time = 400  # Time for each board in microseconds
+        additional_time = 400 # for safety and other delays
         adc_time = 100  # time for waiting all boards to take adc measurement
-        self._be_silent_next_us(number_of_boards * (slot_time + additional_time) + adc_time)
+        self._be_silent_next_us(number_of_boards * slot_time  + adc_time + additional_time)
         self.fps["Sensor poll"].cycle_complete()
         self._read_sensors_flag = False
 
     def _assign_board_id(self):
         try:
-            board_id = BoardBus._id_pool.get_nowait()
-        except queue.Empty:
-            logging.error("Unable to assign ID to board: There are more boards than assignations.")
+            board_id = BoardBus._id_pool3.pop()
+            #TODO: ID Should be put back, if board does not get it?
+        except IndexError:
+            logging.error("Unable to assign ID to board: ID pool is empty.")
         else:
             self._broadcast_board.assign_board_id(board_id)
             #Re enumerate after a delay
-            time.sleep(0.1)    # TODO: Adjust this
-            self._ping(self._broadcast_board) # TODO: Maybe ping only one
+            #
+            #time.sleep(BoardBus.board_busy_time)
+            # self._ping(self._broadcast_board)  # TODO: Maybe ping only one
+            #
+            self._be_silent_next_us(
+                (
+                    BoardBus.led_data_transfertime +
+                    BoardBus.led_data_rendertime +
+                    BoardBus.led_data_time_to_render +
+                    1
+                )*1000
+            )
+            self.ping(self._broadcast_board)
 
     def _assign_board_seq_no(self, board):
         board.assign_sequence_number(self.next_sequence_no)
         self.next_sequence_no += 1
+
+    def _request_info(self):
+        self._broadcast_board.request_info()

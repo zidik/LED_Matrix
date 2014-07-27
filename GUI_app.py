@@ -30,6 +30,8 @@ class GUIapp:
 
         self.photo = None  # Holds TkInter image for displaying in GUI
 
+        tkinter.Button(master, text="Reset IDs", command=self.matrix_controller.reset_id_all).pack()
+
         self.master.bind_all('<Escape>', lambda event: event.widget.quit())
         self.frame.bind("<Key>", self.key_press)
         self.frame.bind("<KeyRelease>", self.key_release)
