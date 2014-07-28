@@ -13,7 +13,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 #define LED_PIN        11  // Pin the LEDs are attached to
 #define BUFFER_SIZE   300  // Buffer for commands coming from serial
 
-#define VERSIONSTRING F("0.9.2")
+#define VERSIONSTRING F("0.9.3")
 
 
 
@@ -64,8 +64,8 @@ void setup() {
 	//Serial direction pins
 	pinMode(2, OUTPUT);			//NOT Receiveing Enable
 	pinMode(A5, OUTPUT);		//Driver Enable
+	set_serial_mode(Off);
 	Serial.begin(500000);
-	set_serial_mode(Receive);
 
 	/*
 	//DEBUG
@@ -85,6 +85,10 @@ void setup() {
 	fillPixels(led_matrix.Color(0xFF, 0xFF, 0xFF));
 	delay(700);
 	fillPixels(led_matrix.Color(0x00, 0x00, 0x00));
+
+	set_serial_mode(Receive);
+	//Clean up Serial buffers before reading again
+	while (Serial.available()) { Serial.read(); }
 }
 
 
@@ -108,13 +112,11 @@ void loop() {
 			if (busSeqNo == 255)
 				break;
 
-			set_serial_mode(Off);
 			setPixels((uint8_t*)cmd_buffer);
 			led_matrix.show();
 			//Data in Serial buffers is partial ("show" function disabled interrupts)
 			//Clean up Serial buffers before reading again
 			while (Serial.available()) { Serial.read(); }
-			set_serial_mode(Receive);
 			break;
 
 		case (char)ReqSensor:{
@@ -130,20 +132,21 @@ void loop() {
 			set_serial_mode(Send);
 			Serial << (char)boardID << resultADC << (char)SensorData;
 			Serial.flush();
-			//Todo siia tyhjendamine?
 			set_serial_mode(Receive);
+			//Clean up Serial buffers before reading again
+			while (Serial.available()) { Serial.read(); }
 		} break;
 
 		case (char)ReqInfo:{
-			set_serial_mode(Off);
 			//TODO: Board does not need to wait, if it was an UNICAST
 			uint16_t slotTime = 500; // time in microseconds given for each board on bus
 			delayMicroseconds((boardID - 128) * slotTime + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
 			set_serial_mode(Send);
 			Serial << (char)boardID << VERSIONSTRING << (char)Info;
 			Serial.flush();
-			while (Serial.available()) { Serial.read(); }
 			set_serial_mode(Receive);
+			//Clean up Serial buffers before reading again
+			while (Serial.available()) { Serial.read(); }
 			}
 			break;
 
@@ -163,12 +166,9 @@ void loop() {
 
 		case (char)OfferID:
 			if (boardID_requested && cmd_index == 1){
-
-				set_serial_mode(Off);
 				fillPixels(led_matrix.Color(0, 0, 0));
+				//Clean up Serial buffers before reading again
 				while (Serial.available()) { Serial.read(); }
-				set_serial_mode(Receive);
-
 				boardID_requested = false;
 				boardID = cmd_buffer[0];
 				saveBoardID();
@@ -191,7 +191,6 @@ void loop() {
 
 		case (char)PingFromMaster:
 			{
-				set_serial_mode(Off);
 				//TODO: Board does not need to wait, if it was an UNICAST
 				//each board responds to a ping in order, delaying proportionally to it's ID
 				//TODO: speedup ping by reducing slot time
@@ -200,8 +199,8 @@ void loop() {
 				set_serial_mode(Send);
 				Serial << (char)boardID << (char)PongToMaster;
 				Serial.flush();
-				while (Serial.available()) { Serial.read(); }
 				set_serial_mode(Receive);
+				while (Serial.available()) { Serial.read(); }
 			}
 			break;
 
@@ -226,7 +225,6 @@ void loop() {
 	if (boardID == BROADCAST_ID){
 		//if request has just been sent don't get stuck here again for a while
 		if (last_id_request_time + 200 < millis() || last_id_request_time == 0){
-			set_serial_mode(Off);
 			//Inform user, that we are waiting for push
 			fillPixels(led_matrix.Color(40, 0, 0));
 			//Wait until button is pressed
@@ -236,11 +234,13 @@ void loop() {
 			last_id_request_time = millis();
 			boardID_requested = true;
 			set_serial_mode(Send);
+			//This is here to make next emptying faster
+			while (Serial.available()) { Serial.read(); }
 			Serial << (char)UNUSED_ID << (char)RequestID;
 			Serial.flush();
+			set_serial_mode(Receive);
 			//Empty input buffer
 			while (Serial.available()) { Serial.read(); }
-			set_serial_mode(Receive);
 		}
 	}
 }
