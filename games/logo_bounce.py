@@ -9,8 +9,10 @@ from games.game_elements_library import Rectangle, Moving, \
 
 
 class LogoBounce(game.Game):
-    def __init__(self, field_dims, image, left=10, top=10, width=25, height=25, speed=0.1, heading=0.6):
+    logo_dims = 15, 15
+    def __init__(self, field_dims, image, left=10, top=10, speed=0.1, heading=0.6):
         self.field_dims = field_dims
+        width, height = LogoBounce.logo_dims
         self.logo = Logo(image, left, top, width, height, speed, heading)
 
     def step(self):

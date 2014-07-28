@@ -3,13 +3,14 @@ __author__ = 'Mark'
 from matrix_controller import MatrixController
 from games.game_elements_library import Ball, Paddle
 from games.catch_colors import FadingSymbol
-from games import Breaker, Pong, CatchColorsMultiplayer
+from games import Breaker, Pong, CatchColorsMultiplayer, LogoBounce
 
 
 def configure_all(config):
     conf_matrix(config["Matrix"])
     conf_ball(config["Ball"])
     conf_paddle(config["Paddle"])
+    conf_logo_bounce(config["Logo Bounce"])
     conf_pong(config["Pong"])
     conf_breaker(config["Breaker"])
     conf_catch_colors(config["Catch Colors"])
@@ -54,6 +55,10 @@ def conf_paddle(conf):
         csv_to_float_list(conf["Fill color 0"]),
         csv_to_float_list(conf["Fill color 1"])
     ]
+
+
+def conf_logo_bounce(conf):
+    LogoBounce.logo_dims = int(conf["Logo width"]), int(conf["Logo height"])
 
 
 def conf_pong(conf):
