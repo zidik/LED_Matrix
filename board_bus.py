@@ -125,11 +125,12 @@ class BoardBus(threading.Thread):
         logging.debug(self.serial_connection.name + " serial Receive thread started")
         self.serial_connection.timeout = 0.1
         while not self._stop_flag:
+            #Read max one byte
             received_data = self.serial_connection.read()
             if len(received_data) == 0:
                 continue
-            else:
-                received_char_code = received_data[0]
+
+            received_char_code = received_data[0]
             received_char = chr(received_char_code)
 
             # Echo Ignoring
@@ -149,7 +150,7 @@ class BoardBus(threading.Thread):
                     logging.error("incomplete data from bus: {}".format(self.current_response))
                 self.current_response = dict()
                 self.current_response['id'] = received_char_code
-            elif received_char_code in [command.value for command in Board.Command]:
+            elif received_char_code in Board.command_codes:
                 self.current_response['code'] = Board.Command(received_char_code)
                 self._responses.put_nowait(self.current_response)
                 self.current_response = {}

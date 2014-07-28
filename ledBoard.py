@@ -30,6 +30,8 @@ class Board:
         request_sensor = 0x11
         request_info = 0x1D
 
+    command_codes = [command.value for command in Command]
+
     def __init__(self, board_id, serial_connection, column=None, row=None):
         self.id = board_id
         self.serial_connection = serial_connection
