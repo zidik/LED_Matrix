@@ -1,6 +1,6 @@
-import heapq
-
 __author__ = 'Mark Laane'
+
+import heapq
 import threading
 import logging
 import time

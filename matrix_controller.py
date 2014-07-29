@@ -204,13 +204,14 @@ class MatrixController:
         Loop that polls sensor data from boards
         """
         fps = MatrixController.sensor_update_FPS
+        update_period = 1.0 / fps
         next_update = time.time()
 
         while not self._stop.isSet() and fps != 0:
             for bus in self.board_buses:
                 bus.read_sensors()
 
-            next_update += 1.0 / fps
+            next_update += update_period
             sleep_time = next_update - time.time()
             if sleep_time > 0:
                 self._stop.wait(sleep_time)
