@@ -405,15 +405,19 @@ class BoardBus(threading.Thread):
         self._be_silent_next_us(number_of_boards * (slot_time + additional_time))
 
     def _refresh_leds(self):
+        no_boards_updated = 0   # number of boards updated in for loop
         for board in self.boards:
             numpy_input = self.data[board.row * 10:board.row * 10 + 10, board.column * 10:board.column * 10 + 10]
-            board.refresh_leds(numpy_input)
+            updated = board.refresh_leds(numpy_input)
+            if updated:
+                no_boards_updated += 1
+
         self.fps["LED update"].cycle_complete()
         # TODO: TEST with next line commented (possible bug seen with one board)
         self._update_display_flag = False
         self._be_silent_next_us(
             (
-                len(self.boards)*BoardBus.led_data_transfertime +
+                no_boards_updated*BoardBus.led_data_transfertime +
                 BoardBus.led_data_rendertime +
                 BoardBus.led_data_time_to_render +
                 1# Just for safety/padding

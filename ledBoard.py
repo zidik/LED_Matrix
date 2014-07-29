@@ -38,6 +38,7 @@ class Board:
         self.column = column
         self.row = row
         self.sensor_value = -1
+        self.data_currently_displayed = None
 
     # TODO: move some of those commands to BroadcastBoard
     def reset_id(self):
@@ -90,13 +91,28 @@ class Board:
         else:
             logging.debug("Pinging board {} on {}".format(self.id, self.serial_connection.name))
 
-    def refresh_leds(self, led_values):
+    def refresh_leds(self, new_data):
         """
         Sends data to be displayed on board's LED's
-        Args:
-            led_values: list of LED values
+
+        @param new_data: 10x10x3 slice of numpy array
+        @return: boolean: whether update was needed
         """
-        self._send_command(Board.Command.send_led_data, self.led_encoder(led_values))
+        # ### FOR DEBUG ### #
+        # If set to True, boards that are already displaying same data, will be skipped.
+        # If set to False, boards will always refresh
+        skip_boards = True
+        # ################# #
+
+        if skip_boards:
+            if self.data_currently_displayed is None or (self.data_currently_displayed != new_data).any():
+                self.data_currently_displayed = new_data
+            else:
+                return False
+
+        encoded_data = self.led_encoder(new_data)
+        self._send_command(Board.Command.send_led_data, encoded_data)
+        return True
 
     def read_sensor(self):
         """
