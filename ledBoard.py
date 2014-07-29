@@ -2,7 +2,9 @@ __author__ = 'Mark'
 
 from enum import Enum, unique
 import logging
+
 import numpy
+
 
 BROADCAST_ADDRESS = 255
 
@@ -11,6 +13,7 @@ class Board:
     """
     This class describes all properties and functions of one LED board.
     """
+
     @unique
     class Command(Enum):
         """ All command-codes sent over serial """
@@ -71,7 +74,7 @@ class Board:
         Args:
             sequence_number: new sequence number for board
         """
-        #Sequence is sent in values between 64 and 127 (these are not used for commands or id's
+        # Sequence is sent in values between 64 and 127 (these are not used for commands or id's
         #encoded_sequence_number = list()
         #while sequence_number > 0:
         #    encoded_sequence_number.append(sequence_number & 0b00111111)
@@ -175,7 +178,7 @@ class Board:
         @param led_value_array: numpy array of displayed image
         @return: bytes, which can be sent directly to serial.write()
         """
-        #TODO: GET A VIEW?
+        # TODO: GET A VIEW?
         arr = numpy.copy(led_value_array)
         arr[1::2] = arr[1::2, ::-1]  # Reverse direction of every second row
         values = arr.ravel()  # Change to one long array

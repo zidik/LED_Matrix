@@ -7,7 +7,7 @@ import logging
 import threading
 
 from game_controller import GameController
-from games import CatchColorsMultiplayer #For configuring
+from games import CatchColorsMultiplayer  # For configuring
 
 
 class MatrixWebserver(threading.Thread):

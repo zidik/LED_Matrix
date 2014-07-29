@@ -38,8 +38,6 @@ class IdPool():
                 heapq.heapify(self._pool)  # If we removed an element, lets turn it back to heap again
 
 
-
-
 class BoardBus(threading.Thread):
     """
     This class describes all properties and functions of one bus.
@@ -53,9 +51,9 @@ class BoardBus(threading.Thread):
     # I perfected it by setting sensor_update and data_update FPS to 100 (more than possible)
     # Then I put one probe on RS-bus and other on MCU LED-data output.
     # Then adjusted value so that next sensor poll would not overlap LED'data output.
-    led_data_transfertime = 3.2     # Measured one packet transfer time:
-    led_data_rendertime = 3         # Measured one render time: 3ms
-    led_data_time_to_render = 2.5   # Time from end of transfer to start of render: 2.5ms
+    led_data_transfertime = 3.2  # Measured one packet transfer time:
+    led_data_rendertime = 3  # Measured one render time: 3ms
+    led_data_time_to_render = 2.5  # Time from end of transfer to start of render: 2.5ms
 
     board_assignment = []
 
@@ -125,7 +123,7 @@ class BoardBus(threading.Thread):
         logging.debug(self.serial_connection.name + " serial Receive thread started")
         self.serial_connection.timeout = 0.1
         while not self._stop_flag:
-            #Read max one byte
+            # Read max one byte
             received_data = self.serial_connection.read()
             if len(received_data) == 0:
                 continue
@@ -174,7 +172,7 @@ class BoardBus(threading.Thread):
             except queue.Empty:
                 pass
             else:
-                #Sleep until silence is over
+                # Sleep until silence is over
                 currtime = time.time()
                 while self.silence_until > currtime:
                     time.sleep(self.silence_until - currtime)
@@ -189,7 +187,7 @@ class BoardBus(threading.Thread):
 
 
 
-        #Sleep until silence is over
+        # Sleep until silence is over
         while self.silence_until > time.time():
             time.sleep(self.silence_until - time.time())
         self._turn_off_boards()
@@ -198,7 +196,7 @@ class BoardBus(threading.Thread):
     def run(self):
         logging.debug(self.serial_connection.name + " serial Process thread started")
         self._stop_flag = False
-        #Start SEND/RECEIVE threads
+        # Start SEND/RECEIVE threads
         for thread in self.threads:
             thread.start()
 
@@ -372,7 +370,7 @@ class BoardBus(threading.Thread):
     # They must ONLY be called from BoardBus thread.
     # BoardBus thread controls the timing and sequencing of these methods
     # Each of these methods have "safe" version above this line
-    ###########################################################
+    # ##########################################################
 
     def _turn_off_boards(self):
         """
@@ -380,7 +378,6 @@ class BoardBus(threading.Thread):
         """
         input_list = numpy.zeros((10, 10, 3), dtype=numpy.uint8)
         self._broadcast_board.refresh_leds(input_list)
-
 
     def _reset_id(self, board):
         board.reset_id()
@@ -396,7 +393,6 @@ class BoardBus(threading.Thread):
             else:
                 BoardBus._id_pool3.push(board.id)
 
-
     def _ping(self, board):
         board.ping()
         slot_time = 300  # Time for each board in microseconds #TODO: ADJUST THIS
@@ -405,7 +401,7 @@ class BoardBus(threading.Thread):
         self._be_silent_next_us(number_of_boards * (slot_time + additional_time))
 
     def _refresh_leds(self):
-        no_boards_updated = 0   # number of boards updated in for loop
+        no_boards_updated = 0  # number of boards updated in for loop
         for board in self.boards:
             numpy_input = self.data[board.row * 10:board.row * 10 + 10, board.column * 10:board.column * 10 + 10]
             updated = board.refresh_leds(numpy_input)
@@ -417,11 +413,11 @@ class BoardBus(threading.Thread):
         self._update_display_flag = False
         self._be_silent_next_us(
             (
-                no_boards_updated*BoardBus.led_data_transfertime +
+                no_boards_updated * BoardBus.led_data_transfertime +
                 BoardBus.led_data_rendertime +
                 BoardBus.led_data_time_to_render +
-                1# Just for safety/padding
-            )*1000
+                1  # Just for safety/padding
+            ) * 1000
         )
 
     def _read_sensors(self):
@@ -432,9 +428,9 @@ class BoardBus(threading.Thread):
         self._broadcast_board.read_sensor()
         number_of_boards = self.next_sequence_no
         slot_time = 400  # Time for each board in microseconds
-        additional_time = 400 # for safety and other delays
+        additional_time = 400  # for safety and other delays
         adc_time = 100  # time for waiting all boards to take adc measurement
-        self._be_silent_next_us(number_of_boards * slot_time  + adc_time + additional_time)
+        self._be_silent_next_us(number_of_boards * slot_time + adc_time + additional_time)
         self.fps["Sensor poll"].cycle_complete()
         self._read_sensors_flag = False
 
@@ -457,7 +453,7 @@ class BoardBus(threading.Thread):
                     BoardBus.led_data_rendertime +
                     BoardBus.led_data_time_to_render +
                     1
-                )*1000
+                ) * 1000
             )
             self.ping(self._broadcast_board)
 

@@ -61,7 +61,7 @@ class CatchColorsMultiplayer(game.Game):
             in zip(CatchColorsMultiplayer.player_colors, range(CatchColorsMultiplayer.number_of_players))
         ]
         # Used in resetting symbols to avoid boards/buttons, that are currently pressed
-        self.pressed_buttons_last_step = []  #Remember buttons pressed since last step
+        self.pressed_buttons_last_step = []  # Remember buttons pressed since last step
 
         self._reset_game()
 

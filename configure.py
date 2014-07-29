@@ -16,6 +16,7 @@ def configure_all(config):
     conf_catch_colors(config["Catch Colors"])
     conf_catch_colors_multi(config["Catch Colors Multiplayer"])
 
+
 def csv_to_list(csv_string):
     if csv_string == '':
         return []

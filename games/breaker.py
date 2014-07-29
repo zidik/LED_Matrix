@@ -144,7 +144,7 @@ class Breaker(game.Game):
             ctx.set_source(pat)
             ctx.stroke_preserve()
 
-        #Clear area inside area being redrawn
+        # Clear area inside area being redrawn
         ctx.set_source_rgb(0, 0, 0)
         ctx.fill()
 
