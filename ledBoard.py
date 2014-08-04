@@ -104,7 +104,7 @@ class Board:
         # ### FOR DEBUG ### #
         # If set to True, boards that are already displaying same data, will be skipped.
         # If set to False, boards will always refresh
-        skip_boards = True
+        skip_boards = False
         # ################# #
 
         if skip_boards:

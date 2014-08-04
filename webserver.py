@@ -163,6 +163,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         if power == "on":
             MyHTTPRequestHandler.game_controller.matrix_controller.start()
+            MyHTTPRequestHandler.game_controller.reset_game()
         elif power == "off":
             MyHTTPRequestHandler.game_controller.matrix_controller.stop()
         else:
