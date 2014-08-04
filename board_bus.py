@@ -94,7 +94,6 @@ class BoardBus(threading.Thread):
         self.ignored_buffer = ""
 
         self.boards = []  # list of boards connected to this bus
-        self.next_sequence_no = 0
 
         # All boards will listen if data is sent to this board
         self._broadcast_board = Board(BROADCAST_ADDRESS, self.serial_connection)
@@ -104,8 +103,12 @@ class BoardBus(threading.Thread):
 
         # Time when transfer should end (this is used when sending LED data because USB-uart bridge buffers data)
         # This is set to estimate time when the transfer should end.
-        self.transfer_ends = time.time()
         self.silence_until = time.time()
+
+        self.request_info()
+
+        self.next_sequence_no = 0
+        self.assign_board_seq_no(self._broadcast_board, 255) #Reset sequence numbers
 
         self.threads = []
         t = threading.Thread(target=self._run_receiving_thread, name="{} Receive".format(self.serial_connection.name))
@@ -113,7 +116,6 @@ class BoardBus(threading.Thread):
         t = threading.Thread(target=self._run_sending_thread, name="{} Send".format(self.serial_connection.name))
         self.threads.append(t)
 
-        self.request_info()
 
     def _run_receiving_thread(self):
         """
@@ -179,6 +181,8 @@ class BoardBus(threading.Thread):
                     currtime = time.time()
 
                 command(*args)
+
+                # if this is the first ping, wait for answers and then set flag "first_ping_is_complete"
                 if not self.first_ping_is_complete and command == self._ping:
                     while self.silence_until > time.time():
                         time.sleep(self.silence_until - time.time())
@@ -280,11 +284,11 @@ class BoardBus(threading.Thread):
         """
         self._command_queue.put_nowait((self._assign_board_id, []))
 
-    def assign_board_seq_no(self, value):
+    def assign_board_seq_no(self, board, value):
         """
         Signals thread to assign a sequence number next cycle
         """
-        self._command_queue.put_nowait((self._assign_board_seq_no, [value]))
+        self._command_queue.put_nowait((self._assign_board_seq_no, [board, value]))
 
     def request_info(self):
         """
@@ -328,7 +332,9 @@ class BoardBus(threading.Thread):
                 except ValueError:
                     pass
                 new_board = self._new_board(response["id"])
-                self.assign_board_seq_no(new_board)
+
+                self.assign_board_seq_no(new_board, self.next_sequence_no)
+                self.next_sequence_no += 1
 
         elif response['code'] == Board.Command.sensor_data:
             try:
@@ -385,6 +391,7 @@ class BoardBus(threading.Thread):
             for board in self.boards:
                 BoardBus._id_pool3.push(board.id)
             self.boards = []
+            self.next_sequence_no = 0
         else:
             try:
                 self.boards.remove(board)
@@ -409,7 +416,6 @@ class BoardBus(threading.Thread):
                 no_boards_updated += 1
 
         self.fps["LED update"].cycle_complete()
-        # TODO: TEST with next line commented (possible bug seen with one board)
         self._update_display_flag = False
         self._be_silent_next_us(
             (
@@ -453,9 +459,13 @@ class BoardBus(threading.Thread):
             )
             self.ping(self._broadcast_board)
 
-    def _assign_board_seq_no(self, board):
-        board.assign_sequence_number(self.next_sequence_no)
-        self.next_sequence_no += 1
+    @staticmethod
+    def _assign_board_seq_no(board, seq_no):
+        board.assign_sequence_number(seq_no)
 
     def _request_info(self):
         self._broadcast_board.request_info()
+        slot_time = 500  # Time for each board in microseconds
+        additional_time = 500  # for other delays
+        number_of_boards = len(BoardBus.board_assignment)
+        self._be_silent_next_us(number_of_boards * (slot_time + additional_time))
