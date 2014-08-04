@@ -76,7 +76,8 @@ class GameController:
     def _add_pong_buttons(self, game):
         self.matrix_controller.buttons = []
         assert isinstance(game, Pong)
-        for i in range(10):
+        dimensions = self.matrix_controller.dimensions
+        for i in range(dimensions[0]):
             # P2 buttons
             self.matrix_controller.add_button(
                 board_id=128 + i,
@@ -86,7 +87,7 @@ class GameController:
         for i in range(10):
             # P1 buttons
             self.matrix_controller.add_button(
-                board_id=128 + 90 + i,
+                board_id=128 + dimensions[0]*(dimensions[1]-1) + i,
                 function=game.button_pressed,
                 args=[1, i]
             )
