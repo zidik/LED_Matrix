@@ -104,12 +104,12 @@ class Board:
         # ### FOR DEBUG ### #
         # If set to True, boards that are already displaying same data, will be skipped.
         # If set to False, boards will always refresh
-        skip_boards = False
+        skip_boards = True
         # ################# #
 
         if skip_boards:
             if self.data_currently_displayed is None or (self.data_currently_displayed != new_data).any():
-                self.data_currently_displayed = new_data
+                self.data_currently_displayed = numpy.copy(new_data)
             else:
                 return False
 
