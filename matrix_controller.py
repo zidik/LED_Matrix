@@ -39,6 +39,7 @@ class MatrixController:
 
         self._assign_boards()
 
+        self.running = False
         self.start()
 
     @staticmethod
@@ -48,6 +49,11 @@ class MatrixController:
                 BoardBus.add_assignation(128 + MatrixController.dimensions[0] * y + x, x, y)
 
     def start(self):
+
+        if self.running:
+            return
+        self.running = True
+
         """
         Connects to serial ports, creates BoardBus for each port and starts it's thread
         Creates and starts Data Update thread - runs the game loop
@@ -86,6 +92,10 @@ class MatrixController:
             bus.ping_all()
 
     def stop(self):
+        if not self.running:
+            return
+        self.running = False
+
         """
         Stops all child-threads
         Closes serial ports
