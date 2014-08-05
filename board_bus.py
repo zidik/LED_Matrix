@@ -125,40 +125,44 @@ class BoardBus(threading.Thread):
         logging.debug(self.serial_connection.name + " serial Receive thread started")
         self.serial_connection.timeout = 0.1
         while not self._stop_flag:
-            # Read max one byte
-            received_data = self.serial_connection.read()
+            # Block until data received or timeout
+            received_data = self.serial_connection.read(1)
             if len(received_data) == 0:
+                # Read timed out - let's just skip the rest
                 continue
+            bytes_waiting = self.serial_connection.inWaiting()
+            if bytes_waiting:
+                received_data += self.serial_connection.read(bytes_waiting)
 
-            received_char_code = received_data[0]
-            received_char = chr(received_char_code)
+            for received_byte in received_data:
+                received_char = chr(received_byte)
 
-            # Echo Ignoring
-            if received_char == '<':
-                self.ignoring_serial_echo = True
-            if self.ignoring_serial_echo:
-                self.ignored_buffer += received_char
-                if received_char == '>':
-                    self.ignoring_serial_echo = False
-                    # logging.debug("Ignored data: \"{}\" ".format(self.ignored_buffer))
-                    self.ignored_buffer = ""
-                continue  # This is echo, let's read next byte
+                # Echo Ignoring
+                if received_char == '<':
+                    self.ignoring_serial_echo = True
+                if self.ignoring_serial_echo:
+                    self.ignored_buffer += received_char
+                    if received_char == '>':
+                        self.ignoring_serial_echo = False
+                        # logging.debug("Ignored data: \"{}\" ".format(self.ignored_buffer))
+                        self.ignored_buffer = ""
+                    continue  # This is echo, let's read next byte
 
-            # If board ID received
-            if 128 <= received_char_code < 255:
-                if self.current_response != {}:
-                    logging.error("incomplete data from bus: {}".format(self.current_response))
-                self.current_response = dict()
-                self.current_response['id'] = received_char_code
-            elif received_char_code in Board.command_codes:
-                self.current_response['code'] = Board.Command(received_char_code)
-                self._responses.put_nowait(self.current_response)
-                self.current_response = {}
-            else:
-                try:
-                    self.current_response['data'] += received_char
-                except KeyError:
-                    self.current_response['data'] = received_char
+                # If board ID received
+                if 128 <= received_byte < 255:
+                    if self.current_response != {}:
+                        logging.error("incomplete data from bus: {}".format(self.current_response))
+                    self.current_response = dict()
+                    self.current_response['id'] = received_byte
+                elif received_byte in Board.command_codes:
+                    self.current_response['code'] = Board.Command(received_byte)
+                    self._responses.put_nowait(self.current_response)
+                    self.current_response = {}
+                else:
+                    try:
+                        self.current_response['data'] += received_char
+                    except KeyError:
+                        self.current_response['data'] = received_char
         logging.debug(self.serial_connection.name + " serial Receive thread stopped")
 
     def _run_sending_thread(self):
@@ -349,7 +353,7 @@ class BoardBus(threading.Thread):
                         try:
                             board.set_sensor_value(int(response["data"]))
                         except ValueError:
-                            logging.exception("Setting sensor value failed. response=".format(response))
+                            logging.exception("Setting sensor value failed. response={}".format(response))
                         break
                 else:
                     logging.error("Received sensor data from unknown board. \"{}\".".format(response))
