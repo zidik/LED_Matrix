@@ -47,11 +47,14 @@ class Logo(Rectangle, Moving):
         self.center_y += self.speed_y
 
     def draw(self, ctx):
+        assert(isinstance(ctx, cairo.Context))
         # scale image and add it
         ctx.save()
         ctx.translate(self.left, self.top)
         ctx.scale(self.scale_xy, self.scale_xy)
         ctx.set_source_surface(self.logo_surface)
+
+        ctx.get_source().set_filter(cairo.FILTER_FAST)
 
         ctx.paint()
         ctx.restore()

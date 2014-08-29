@@ -69,8 +69,8 @@ class MatrixController:
                 new_bus = BoardBus(connection, self.displayed_data)
                 self.board_buses.append(new_bus)
                 self.threads.append(new_bus)
-            except serial.SerialException:
-                logging.exception("Unable to open serial port")
+            except serial.SerialException as e:
+                logging.error("Unable to open serial port {}. \n{}".format(port,e))
 
         # Data Update (Game Loop) - updates data for displaying
         t = threading.Thread(target=self.update_data, name="DataUpd Thread")
