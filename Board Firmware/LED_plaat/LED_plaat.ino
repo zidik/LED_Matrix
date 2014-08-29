@@ -13,15 +13,8 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 #define LED_PIN        11  // Pin the LEDs are attached to
 #define BUFFER_SIZE   300  // Buffer for commands coming from serial
 
-#define VERSIONSTRING F("0.9.2")
+#define VERSIONSTRING F("0.9.10")
 
-
-
-// common colors for convinience
-#define LED_RED   led_matrix.Color(10, 0, 0)
-#define LED_GREEN led_matrix.Color(0, 10, 0)
-#define LED_BLUE  led_matrix.Color(0, 0, 10)
-#define LED_OFF   led_matrix.Color(0, 0, 0)
 
 // Gamma correction improves appearance of midrange colors
 const uint8_t PROGMEM gamma8[] = {
@@ -54,8 +47,7 @@ boolean cmd_started = false;  // whether currently reading a cmd to the buffer
 boolean cmd_complete = false;  // whether the command string is complete
 
 unsigned long last_id_request_time = 0;
-bool boardID_requested = false;
-
+boolean boardID_requested = false;
 
 void setup() {
 	led_matrix.begin();
@@ -64,27 +56,28 @@ void setup() {
 	//Serial direction pins
 	pinMode(2, OUTPUT);			//NOT Receiveing Enable
 	pinMode(A5, OUTPUT);		//Driver Enable
+	set_serial_mode(Off);
 	Serial.begin(500000);
-	set_serial_mode(Receive);
 
-	/*
-	//DEBUG
-	set_serial_mode(Send);
-	Serial << (char)(boardID == BROADCAST_ID ? 0xFE : boardID) << F("SETUP COMPLETE") << (char)DebugData;
-	Serial.flush();
-	set_serial_mode(Receive);
-	///
-	*/
+	//Test sequence if pin 12 is pulled down externally
+	const int testPin = 12;
+	pinMode(testPin, INPUT_PULLUP);
+	if (digitalRead(testPin) == LOW){
+		fillPixels(led_matrix.Color(0xFF, 0x00, 0x00));
+		delay(700);
+		fillPixels(led_matrix.Color(0x00, 0xFF, 0x00));
+		delay(700);
+		fillPixels(led_matrix.Color(0x00, 0x00, 0xFF));
+		delay(700);
+		fillPixels(led_matrix.Color(0xFF, 0xFF, 0xFF));
+		delay(700);
+		fillPixels(led_matrix.Color(0x00, 0x00, 0x00));
+	}
+	pinMode(testPin, INPUT);
 
-	fillPixels(led_matrix.Color(0xFF, 0x00, 0x00));
-	delay(700);
-	fillPixels(led_matrix.Color(0x00, 0xFF, 0x00));
-	delay(700);
-	fillPixels(led_matrix.Color(0x00, 0x00, 0xFF));
-	delay(700);
-	fillPixels(led_matrix.Color(0xFF, 0xFF, 0xFF));
-	delay(700);
-	fillPixels(led_matrix.Color(0x00, 0x00, 0x00));
+	set_serial_mode(Receive);
+	//Clean up Serial buffers before reading again
+	while (Serial.available()) { Serial.read(); }
 }
 
 
@@ -101,20 +94,18 @@ void loop() {
 		///
 		*/
 
-
 		switch (cmd_buffer[cmd_index]) {
 		case (char)LedData:
 			// This is needed to keep board from being unavailable while master is not yet sent bus sequence number
 			if (busSeqNo == 255)
 				break;
 
-			set_serial_mode(Off);
 			setPixels((uint8_t*)cmd_buffer);
 			led_matrix.show();
+
 			//Data in Serial buffers is partial ("show" function disabled interrupts)
 			//Clean up Serial buffers before reading again
 			while (Serial.available()) { Serial.read(); }
-			set_serial_mode(Receive);
 			break;
 
 		case (char)ReqSensor:{
@@ -130,20 +121,21 @@ void loop() {
 			set_serial_mode(Send);
 			Serial << (char)boardID << resultADC << (char)SensorData;
 			Serial.flush();
-			//Todo siia tyhjendamine?
 			set_serial_mode(Receive);
+			//Clean up Serial buffers before reading again
+			while (Serial.available()) { Serial.read(); }
 		} break;
 
 		case (char)ReqInfo:{
-			set_serial_mode(Off);
 			//TODO: Board does not need to wait, if it was an UNICAST
 			uint16_t slotTime = 500; // time in microseconds given for each board on bus
 			delayMicroseconds((boardID - 128) * slotTime + 1); // +1, because delayMicroseconds(0) delay's for maximum ammount
 			set_serial_mode(Send);
 			Serial << (char)boardID << VERSIONSTRING << (char)Info;
 			Serial.flush();
-			while (Serial.available()) { Serial.read(); }
 			set_serial_mode(Receive);
+			//Clean up Serial buffers before reading again
+			while (Serial.available()) { Serial.read(); }
 			}
 			break;
 
@@ -163,12 +155,9 @@ void loop() {
 
 		case (char)OfferID:
 			if (boardID_requested && cmd_index == 1){
-
-				set_serial_mode(Off);
 				fillPixels(led_matrix.Color(0, 0, 0));
+				//Clean up Serial buffers before reading again
 				while (Serial.available()) { Serial.read(); }
-				set_serial_mode(Receive);
-
 				boardID_requested = false;
 				boardID = cmd_buffer[0];
 				saveBoardID();
@@ -191,7 +180,6 @@ void loop() {
 
 		case (char)PingFromMaster:
 			{
-				set_serial_mode(Off);
 				//TODO: Board does not need to wait, if it was an UNICAST
 				//each board responds to a ping in order, delaying proportionally to it's ID
 				//TODO: speedup ping by reducing slot time
@@ -200,8 +188,8 @@ void loop() {
 				set_serial_mode(Send);
 				Serial << (char)boardID << (char)PongToMaster;
 				Serial.flush();
-				while (Serial.available()) { Serial.read(); }
 				set_serial_mode(Receive);
+				while (Serial.available()) { Serial.read(); }
 			}
 			break;
 
@@ -226,21 +214,27 @@ void loop() {
 	if (boardID == BROADCAST_ID){
 		//if request has just been sent don't get stuck here again for a while
 		if (last_id_request_time + 200 < millis() || last_id_request_time == 0){
-			set_serial_mode(Off);
 			//Inform user, that we are waiting for push
-			fillPixels(led_matrix.Color(40, 0, 0));
+			fillPixels(led_matrix.Color(0, 0, 0));
+			led_matrix.setPixelColor(0, led_matrix.Color(120, 0, 0));
+			led_matrix.show();
+			//fillPixels(led_matrix.Color(40, 0, 0));
 			//Wait until button is pressed
 			while (analogRead(2) < 100){}
 			//Inform user, that push has been registred
-			fillPixels(led_matrix.Color(40, 40, 40));
+			led_matrix.setPixelColor(0, led_matrix.Color(80, 80, 80));
+			led_matrix.show();
+			//fillPixels(led_matrix.Color(40, 40, 40));
 			last_id_request_time = millis();
 			boardID_requested = true;
 			set_serial_mode(Send);
+			//This is here to make next emptying faster
+			while (Serial.available()) { Serial.read(); }
 			Serial << (char)UNUSED_ID << (char)RequestID;
 			Serial.flush();
+			set_serial_mode(Receive);
 			//Empty input buffer
 			while (Serial.available()) { Serial.read(); }
-			set_serial_mode(Receive);
 		}
 	}
 }
@@ -261,7 +255,8 @@ void serialEvent() {
 			inChar == (char)PingFromMaster ||
 			inChar == (char)OfferSeqNo     ||
 			inChar == (char)LedData        ||
-			inChar == (char)ReqSensor
+			inChar == (char)ReqSensor      ||
+			inChar == (char)ReqInfo
 			){
 			cmd_complete = true;
 			cmd_started = false;
@@ -270,6 +265,7 @@ void serialEvent() {
 			if (cmd_index < BUFFER_SIZE - 1){
 				cmd_index++;
 			}
+
 		}
 	}
 
@@ -277,6 +273,8 @@ void serialEvent() {
 		cmd_started = true;
 		cmd_index = 0;
 	}
+
+	
 }
 
 void setPixels(uint8_t *input_data) {

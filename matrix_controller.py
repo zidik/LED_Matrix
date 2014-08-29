@@ -39,6 +39,7 @@ class MatrixController:
 
         self._assign_boards()
 
+        self.running = False
         self.start()
 
     @staticmethod
@@ -48,6 +49,11 @@ class MatrixController:
                 BoardBus.add_assignation(128 + MatrixController.dimensions[0] * y + x, x, y)
 
     def start(self):
+
+        if self.running:
+            return
+        self.running = True
+
         """
         Connects to serial ports, creates BoardBus for each port and starts it's thread
         Creates and starts Data Update thread - runs the game loop
@@ -63,8 +69,8 @@ class MatrixController:
                 new_bus = BoardBus(connection, self.displayed_data)
                 self.board_buses.append(new_bus)
                 self.threads.append(new_bus)
-            except serial.SerialException:
-                logging.exception("Unable to open serial port")
+            except serial.SerialException as e:
+                logging.error("Unable to open serial port {}. \n{}".format(port,e))
 
         # Data Update (Game Loop) - updates data for displaying
         t = threading.Thread(target=self.update_data, name="DataUpd Thread")
@@ -86,6 +92,10 @@ class MatrixController:
             bus.ping_all()
 
     def stop(self):
+        if not self.running:
+            return
+        self.running = False
+
         """
         Stops all child-threads
         Closes serial ports
@@ -114,88 +124,59 @@ class MatrixController:
         update_period = 1.0 / fps
 
         next_update = time.time()
-        loopcount = 0
 
         while not self._stop.isSet() and fps != 0:
-            results = 6 * [-1]
-            with Timer() as t0:
 
-                # Poll buttons -> this will call associated functions when buttons are pressed.
-                for button in self.buttons:
-                    assert isinstance(button, BoardButton)
-                    try:
-                        button.poll()
-                    except ValueError as e:
-                        logging.warning("{}".format(e))
+            # Poll buttons -> this will call associated functions when buttons are pressed.
+            for button in self.buttons:
+                assert isinstance(button, BoardButton)
+                try:
+                    button.poll()
+                except ValueError as e:
+                    logging.warning("{}".format(e))
 
-                # # UPDATE
+            # # UPDATE
+            if self.game is not None:
+
+                self.game.step()
+                self.game.draw(self.context)
+
+                # Get data from surface and convert it to numpy array
+                self.surface.flush()
+                buf = self.surface.get_data()
+                a = numpy.frombuffer(buf, numpy.uint8)
+                a.shape = (self.surface_dims[1], self.surface_dims[0], 4)
+                # Strip Alpha values and copy to our main numpy array
+                # also switch BGR to RGB
+                numpy.copyto(self.displayed_data[:, :, 0], a[:, :, 2])
+                numpy.copyto(self.displayed_data[:, :, 1], a[:, :, 1])
+                numpy.copyto(self.displayed_data[:, :, 2], a[:, :, 0])
+
+            # #UPDATE END
+
+            self._signal_update_boards()
+            if self.data_update_callback is not None:
+                # noinspection PyCallingNonCallable
+                self.data_update_callback()  # signal caller (GUI for example)
+            self.fps["Game"].cycle_complete()
+
+            next_update += update_period
+            sleep_time = next_update - time.time()
+
+            skipped_frames = 0
+            while sleep_time < 0:
+                # SKIP FRAMES!
                 if self.game is not None:
-                    with Timer() as t1:
-                        self.game.step()
-                    results[1] = t1.milliseconds
-
-                    start = time.time()
-                    self.game.draw(self.context)
-                    results[2] = (time.time() - start) * 1000
-
-                    with Timer() as t3:
-                        # Get data from surface and convert it to numpy array
-                        self.surface.flush()
-                        buf = self.surface.get_data()
-                        a = numpy.frombuffer(buf, numpy.uint8)
-                        a.shape = (self.surface_dims[1], self.surface_dims[0], 4)
-                        # Strip Alpha values and copy to our main numpy array
-                        # also switch BGR to RGB
-                        numpy.copyto(self.displayed_data[:, :, 0], a[:, :, 2])
-                        numpy.copyto(self.displayed_data[:, :, 1], a[:, :, 1])
-                        numpy.copyto(self.displayed_data[:, :, 2], a[:, :, 0])
-                    results[3] = t3.milliseconds
-
-                # #UPDATE END
-
-                self._signal_update_boards()
-                if self.data_update_callback is not None:
-                    # noinspection PyCallingNonCallable
-                    self.data_update_callback()  # signal caller (GUI for example)
-                self.fps["Game"].cycle_complete()
-
+                    self.game.step()
                 next_update += update_period
                 sleep_time = next_update - time.time()
+                skipped_frames += 1
+            else:
+                # Normal execution - sleep time is positive
+                self._stop.wait(sleep_time)
 
-                skipped_frames = 0
-                while sleep_time < 0:
-                    with Timer() as t5:
-                        # SKIP FRAMES!
-                        if self.game is not None:
-                            self.game.step()
-                        next_update += update_period
-                        sleep_time = next_update - time.time()
-                        skipped_frames += 1
-                    results[5] += t5.milliseconds
-                else:
-                    # Normal execution - sleep time is positive
-                    with Timer() as t4:
-                        self._stop.wait(sleep_time)
-                    results[4] = t4.milliseconds
-
-            results[0] = t0.milliseconds
-
-            # Timing info
-            loopcount += 1
-            if loopcount > 10 * fps or skipped_frames > 0:
-                loopcount = 0
-                """
-                logging.debug(
-                    "update total: {0[0]:.3f} step: {0[1]:.3f}ms, "
-                    "draw: {0[2]:.3f}ms, convert: {0[3]:.3f}ms, \n"
-                    "sleep: {0[4]:.3f}ms({1:.3f}) skipped_frames: {2} - {0[5]:.3f}ms".format(
-                        results,
-                        sleep_time * 1000,
-                        skipped_frames
-                    )
-
-                )
-                """
+            if skipped_frames > 0:
+                logging.debug("skipped_frames: {}".format(skipped_frames))
 
         logging.debug("Thread \"{}\" stopped".format(threading.current_thread().name))
 
@@ -204,13 +185,14 @@ class MatrixController:
         Loop that polls sensor data from boards
         """
         fps = MatrixController.sensor_update_FPS
+        update_period = 1.0 / fps
         next_update = time.time()
 
         while not self._stop.isSet() and fps != 0:
             for bus in self.board_buses:
                 bus.read_sensors()
 
-            next_update += 1.0 / fps
+            next_update += update_period
             sleep_time = next_update - time.time()
             if sleep_time > 0:
                 self._stop.wait(sleep_time)

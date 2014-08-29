@@ -1,6 +1,8 @@
 __author__ = 'Mark'
-import main
 import yappi
+
+import main
+
 
 yappi.start()
 main.main()

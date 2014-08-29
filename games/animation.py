@@ -27,6 +27,7 @@ class Animation(game.Game):
         ctx.set_source_rgba(0, 0, 0, 0.2)  # Alpha 0.2 to introduce "delay" or "fade"
         ctx.paint()
 
+        ctx.new_path()
         for circle in self.expanding_circles:
             circle.draw(ctx)
 

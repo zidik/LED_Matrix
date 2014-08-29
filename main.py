@@ -21,7 +21,7 @@ def main():
 
     logging.info("Starting up...")
 
-    ### Loading Configuration
+    # ## Loading Configuration
     logging.debug("Loading configuration...")
     config = configparser.ConfigParser()
     config.read('config.ini')

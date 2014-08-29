@@ -1,6 +1,6 @@
-import heapq
-
 __author__ = 'Mark Laane'
+
+import heapq
 import threading
 import logging
 import time
@@ -38,8 +38,6 @@ class IdPool():
                 heapq.heapify(self._pool)  # If we removed an element, lets turn it back to heap again
 
 
-
-
 class BoardBus(threading.Thread):
     """
     This class describes all properties and functions of one bus.
@@ -53,9 +51,9 @@ class BoardBus(threading.Thread):
     # I perfected it by setting sensor_update and data_update FPS to 100 (more than possible)
     # Then I put one probe on RS-bus and other on MCU LED-data output.
     # Then adjusted value so that next sensor poll would not overlap LED'data output.
-    led_data_transfertime = 3.2     # Measured one packet transfer time:
-    led_data_rendertime = 3         # Measured one render time: 3ms
-    led_data_time_to_render = 2.5   # Time from end of transfer to start of render: 2.5ms
+    led_data_transfertime = 3.2  # Measured one packet transfer time:
+    led_data_rendertime = 3  # Measured one render time: 3ms
+    led_data_time_to_render = 2.5  # Time from end of transfer to start of render: 2.5ms
 
     board_assignment = []
 
@@ -96,7 +94,6 @@ class BoardBus(threading.Thread):
         self.ignored_buffer = ""
 
         self.boards = []  # list of boards connected to this bus
-        self.next_sequence_no = 0
 
         # All boards will listen if data is sent to this board
         self._broadcast_board = Board(BROADCAST_ADDRESS, self.serial_connection)
@@ -106,8 +103,12 @@ class BoardBus(threading.Thread):
 
         # Time when transfer should end (this is used when sending LED data because USB-uart bridge buffers data)
         # This is set to estimate time when the transfer should end.
-        self.transfer_ends = time.time()
         self.silence_until = time.time()
+
+        self.request_info()
+
+        self.next_sequence_no = 0
+        self.assign_board_seq_no(self._broadcast_board, 255) #Reset sequence numbers
 
         self.threads = []
         t = threading.Thread(target=self._run_receiving_thread, name="{} Receive".format(self.serial_connection.name))
@@ -115,7 +116,6 @@ class BoardBus(threading.Thread):
         t = threading.Thread(target=self._run_sending_thread, name="{} Send".format(self.serial_connection.name))
         self.threads.append(t)
 
-        self.request_info()
 
     def _run_receiving_thread(self):
         """
@@ -125,39 +125,44 @@ class BoardBus(threading.Thread):
         logging.debug(self.serial_connection.name + " serial Receive thread started")
         self.serial_connection.timeout = 0.1
         while not self._stop_flag:
-            received_data = self.serial_connection.read()
+            # Block until data received or timeout
+            received_data = self.serial_connection.read(1)
             if len(received_data) == 0:
+                # Read timed out - let's just skip the rest
                 continue
-            else:
-                received_char_code = received_data[0]
-            received_char = chr(received_char_code)
+            bytes_waiting = self.serial_connection.inWaiting()
+            if bytes_waiting:
+                received_data += self.serial_connection.read(bytes_waiting)
 
-            # Echo Ignoring
-            if received_char == '<':
-                self.ignoring_serial_echo = True
-            if self.ignoring_serial_echo:
-                self.ignored_buffer += received_char
-                if received_char == '>':
-                    self.ignoring_serial_echo = False
-                    # logging.debug("Ignored data: \"{}\" ".format(self.ignored_buffer))
-                    self.ignored_buffer = ""
-                continue  # This is echo, let's read next byte
+            for received_byte in received_data:
+                received_char = chr(received_byte)
 
-            # If board ID received
-            if 128 <= received_char_code < 255:
-                if self.current_response != {}:
-                    logging.error("incomplete data from bus: {}".format(self.current_response))
-                self.current_response = dict()
-                self.current_response['id'] = received_char_code
-            elif received_char_code in [command.value for command in Board.Command]:
-                self.current_response['code'] = Board.Command(received_char_code)
-                self._responses.put_nowait(self.current_response)
-                self.current_response = {}
-            else:
-                try:
-                    self.current_response['data'] += received_char
-                except KeyError:
-                    self.current_response['data'] = received_char
+                # Echo Ignoring
+                if received_char == '<':
+                    self.ignoring_serial_echo = True
+                if self.ignoring_serial_echo:
+                    self.ignored_buffer += received_char
+                    if received_char == '>':
+                        self.ignoring_serial_echo = False
+                        # logging.debug("Ignored data: \"{}\" ".format(self.ignored_buffer))
+                        self.ignored_buffer = ""
+                    continue  # This is echo, let's read next byte
+
+                # If board ID received
+                if 128 <= received_byte < 255:
+                    if self.current_response != {}:
+                        logging.error("incomplete data from bus: {}".format(self.current_response))
+                    self.current_response = dict()
+                    self.current_response['id'] = received_byte
+                elif received_byte in Board.command_codes:
+                    self.current_response['code'] = Board.Command(received_byte)
+                    self._responses.put_nowait(self.current_response)
+                    self.current_response = {}
+                else:
+                    try:
+                        self.current_response['data'] += received_char
+                    except KeyError:
+                        self.current_response['data'] = received_char
         logging.debug(self.serial_connection.name + " serial Receive thread stopped")
 
     def _run_sending_thread(self):
@@ -173,13 +178,15 @@ class BoardBus(threading.Thread):
             except queue.Empty:
                 pass
             else:
-                #Sleep until silence is over
+                # Sleep until silence is over
                 currtime = time.time()
                 while self.silence_until > currtime:
                     time.sleep(self.silence_until - currtime)
                     currtime = time.time()
 
                 command(*args)
+
+                # if this is the first ping, wait for answers and then set flag "first_ping_is_complete"
                 if not self.first_ping_is_complete and command == self._ping:
                     while self.silence_until > time.time():
                         time.sleep(self.silence_until - time.time())
@@ -188,7 +195,7 @@ class BoardBus(threading.Thread):
 
 
 
-        #Sleep until silence is over
+        # Sleep until silence is over
         while self.silence_until > time.time():
             time.sleep(self.silence_until - time.time())
         self._turn_off_boards()
@@ -197,7 +204,7 @@ class BoardBus(threading.Thread):
     def run(self):
         logging.debug(self.serial_connection.name + " serial Process thread started")
         self._stop_flag = False
-        #Start SEND/RECEIVE threads
+        # Start SEND/RECEIVE threads
         for thread in self.threads:
             thread.start()
 
@@ -281,11 +288,11 @@ class BoardBus(threading.Thread):
         """
         self._command_queue.put_nowait((self._assign_board_id, []))
 
-    def assign_board_seq_no(self, value):
+    def assign_board_seq_no(self, board, value):
         """
         Signals thread to assign a sequence number next cycle
         """
-        self._command_queue.put_nowait((self._assign_board_seq_no, [value]))
+        self._command_queue.put_nowait((self._assign_board_seq_no, [board, value]))
 
     def request_info(self):
         """
@@ -329,7 +336,9 @@ class BoardBus(threading.Thread):
                 except ValueError:
                     pass
                 new_board = self._new_board(response["id"])
-                self.assign_board_seq_no(new_board)
+
+                self.assign_board_seq_no(new_board, self.next_sequence_no)
+                self.next_sequence_no += 1
 
         elif response['code'] == Board.Command.sensor_data:
             try:
@@ -344,7 +353,7 @@ class BoardBus(threading.Thread):
                         try:
                             board.set_sensor_value(int(response["data"]))
                         except ValueError:
-                            logging.exception("Setting sensor value failed. response=".format(response))
+                            logging.exception("Setting sensor value failed. response={}".format(response))
                         break
                 else:
                     logging.error("Received sensor data from unknown board. \"{}\".".format(response))
@@ -371,7 +380,7 @@ class BoardBus(threading.Thread):
     # They must ONLY be called from BoardBus thread.
     # BoardBus thread controls the timing and sequencing of these methods
     # Each of these methods have "safe" version above this line
-    ###########################################################
+    # ##########################################################
 
     def _turn_off_boards(self):
         """
@@ -380,13 +389,13 @@ class BoardBus(threading.Thread):
         input_list = numpy.zeros((10, 10, 3), dtype=numpy.uint8)
         self._broadcast_board.refresh_leds(input_list)
 
-
     def _reset_id(self, board):
         board.reset_id()
         if board == self._broadcast_board:
             for board in self.boards:
                 BoardBus._id_pool3.push(board.id)
             self.boards = []
+            self.next_sequence_no = 0
         else:
             try:
                 self.boards.remove(board)
@@ -394,7 +403,6 @@ class BoardBus(threading.Thread):
                 logging.exception("Reset sent to board which was not in boards list")
             else:
                 BoardBus._id_pool3.push(board.id)
-
 
     def _ping(self, board):
         board.ping()
@@ -404,32 +412,31 @@ class BoardBus(threading.Thread):
         self._be_silent_next_us(number_of_boards * (slot_time + additional_time))
 
     def _refresh_leds(self):
+        no_boards_updated = 0  # number of boards updated in for loop
         for board in self.boards:
             numpy_input = self.data[board.row * 10:board.row * 10 + 10, board.column * 10:board.column * 10 + 10]
-            board.refresh_leds(numpy_input)
+            updated = board.refresh_leds(numpy_input)
+            if updated:
+                no_boards_updated += 1
+
         self.fps["LED update"].cycle_complete()
-        # TODO: TEST with next line commented (possible bug seen with one board)
         self._update_display_flag = False
         self._be_silent_next_us(
             (
-                len(self.boards)*BoardBus.led_data_transfertime +
+                no_boards_updated * BoardBus.led_data_transfertime +
                 BoardBus.led_data_rendertime +
                 BoardBus.led_data_time_to_render +
-                1# Just for safety/padding
-            )*1000
+                1  # Just for safety/padding
+            ) * 1000
         )
 
     def _read_sensors(self):
-        """
-        NB! sensor readings are being buffered in hardware(Bus converter)
-        this causes some of data to be read out next cycle
-        """
         self._broadcast_board.read_sensor()
         number_of_boards = self.next_sequence_no
         slot_time = 400  # Time for each board in microseconds
-        additional_time = 400 # for safety and other delays
+        additional_time = 400  # for safety and other delays
         adc_time = 100  # time for waiting all boards to take adc measurement
-        self._be_silent_next_us(number_of_boards * slot_time  + adc_time + additional_time)
+        self._be_silent_next_us(number_of_boards * slot_time + adc_time + additional_time)
         self.fps["Sensor poll"].cycle_complete()
         self._read_sensors_flag = False
 
@@ -452,13 +459,17 @@ class BoardBus(threading.Thread):
                     BoardBus.led_data_rendertime +
                     BoardBus.led_data_time_to_render +
                     1
-                )*1000
+                ) * 1000
             )
             self.ping(self._broadcast_board)
 
-    def _assign_board_seq_no(self, board):
-        board.assign_sequence_number(self.next_sequence_no)
-        self.next_sequence_no += 1
+    @staticmethod
+    def _assign_board_seq_no(board, seq_no):
+        board.assign_sequence_number(seq_no)
 
     def _request_info(self):
         self._broadcast_board.request_info()
+        slot_time = 500  # Time for each board in microseconds
+        additional_time = 500  # for other delays
+        number_of_boards = len(BoardBus.board_assignment)
+        self._be_silent_next_us(number_of_boards * (slot_time + additional_time))

@@ -7,7 +7,7 @@ import logging
 import threading
 
 from game_controller import GameController
-from games import CatchColorsMultiplayer #For configuring
+from games import CatchColorsMultiplayer  # For configuring
 
 
 class MatrixWebserver(threading.Thread):
@@ -163,6 +163,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         if power == "on":
             MyHTTPRequestHandler.game_controller.matrix_controller.start()
+            MyHTTPRequestHandler.game_controller.reset_game()
         elif power == "off":
             MyHTTPRequestHandler.game_controller.matrix_controller.stop()
         else:

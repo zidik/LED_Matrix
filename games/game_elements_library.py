@@ -225,13 +225,12 @@ class Ball(Circle, Moving):
         return dirty_area
 
     def draw(self, cairo_context):
-        cairo_context.arc(self.center_x, self.center_y, self.radius-0.5 , 0, 2 * math.pi)
+        cairo_context.arc(self.center_x, self.center_y, self.radius - 0.5, 0, 2 * math.pi)
         cairo_context.set_line_width(1)
         cairo_context.set_source(self.fill_pattern)
         cairo_context.fill_preserve()
         cairo_context.set_source(self.stroke_pattern)
         cairo_context.stroke()
-
 
 
 class Paddle(Rectangle):
@@ -355,7 +354,7 @@ class Paddle(Rectangle):
 
         cr.fill_preserve()
 
-        #Stroke
+        # Stroke
         if self.flipped:
             pat = cairo.LinearGradient(self.right + 1, 0.0, self.left - 1, 0)
         else:

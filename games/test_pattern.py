@@ -52,7 +52,7 @@ class TestPattern(game.Game):
                 ctx.rectangle(10 * board.column, 10 * board.row, 10, 10)
                 ctx.fill()
 
-        #Display edges of a board
+        # Display edges of a board
         stroke = False
         if stroke:
             ctx.set_source_rgba(0, 0, 0, 1)
