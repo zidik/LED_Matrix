@@ -10,7 +10,7 @@
 <div id="wrapper">
     <form action="power_toggle" method="post">
         <label for="power_button">Power:</label>
-        <input type="button" id="power_button" name="power" value="On" class="on" onclick="togglePower(this)"/>
+        <input type="button" id="power_button" name="power" value="On" class="on" onclick="togglePower(this)" />
     </form>
     <form action="mode_change" method="post">
         <label for="mode_select">Mode:</label>
@@ -33,13 +33,14 @@
             <option value="5">5</option>
             <option value="6">6</option>
         </select>
-        <input type="submit" value="Go" id="mode_submit">
+        <input type="submit" value="Go" id="mode_submit" />
     </form>
     <form action="file_upload" method="post" enctype="multipart/form-data">
         <label for="file_upload">Filename:</label>
-        <input type="file" name="uploaded_file" id="file_upload" accept=".png"><br>
+        <input type="file" name="uploaded_file" id="file_upload" accept=".png" />
+        <br />
         <label for="send_file"> </label>
-        <input type="submit" id="send_file" value="Send File">
+        <input type="submit" id="send_file" value="Send File" />
     </form>
 </div>
 <h2>Server response:</h2>
