@@ -5,3 +5,5 @@ from .catch_colors import CatchColors, CatchColorsMultiplayer
 from .logo_bounce import LogoBounce
 from .pong import Pong
 from .test_pattern import TestPattern
+from .plasma import Plasma
+from .game import Game, DirectNumpyAccessGame

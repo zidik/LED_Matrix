@@ -4,7 +4,7 @@ import logging
 
 from board_bus import BoardBus
 from matrix_controller import MatrixController
-from games import Animation, Breaker, CatchColors, CatchColorsMultiplayer, LogoBounce, Pong, TestPattern
+from games import Animation, Breaker, CatchColors, CatchColorsMultiplayer, LogoBounce, Pong, TestPattern, Plasma
 
 
 class GameController:
@@ -17,6 +17,7 @@ class GameController:
         logo = 4
         catch_colors = 5
         catch_colors_multiplayer = 6
+        plasma = 7
 
     def __init__(self, matrix_controller):
         assert isinstance(matrix_controller, MatrixController)
@@ -58,6 +59,10 @@ class GameController:
 
         elif mode == GameController.Mode.catch_colors_multiplayer:
             game = CatchColorsMultiplayer(BoardBus.board_assignment, surface_dims)
+            self._add_all_buttons(game)
+
+        elif mode == GameController.Mode.plasma:
+            game = Plasma(BoardBus.board_assignment, surface_dims)
             self._add_all_buttons(game)
 
         else:

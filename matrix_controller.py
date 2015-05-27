@@ -7,10 +7,10 @@ import time
 import serial
 import numpy
 import cairocffi as cairo
+import games
 
 from board_bus import BoardBus
 from fpsManager import FpsManager
-from timer import Timer
 
 
 class MatrixController:
@@ -31,8 +31,8 @@ class MatrixController:
         self.board_buses = []
         self.buttons = []
         # Cairo surface for drawing on
-        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.surface_dims[0], self.surface_dims[1])
-        self.context = cairo.Context(self.surface)
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.surface_dims[0], self.surface_dims[1])
+        self.context = cairo.Context(surface)
         # Numpy array of data displayed on floor and GUI
         # Image from Cairo surface is copied into this buffer every frame
         self.displayed_data = numpy.zeros((self.surface_dims[1], self.surface_dims[0], 3), dtype=numpy.uint8)
@@ -114,6 +114,20 @@ class MatrixController:
             connection.close()
         logging.debug("Serial ports closed")
 
+    def copy_from_context_to_displayed_data(self):
+        # Get data from surface and convert it to numpy array
+        target_surface = self.context.get_target()
+        target_surface.flush()
+        buf = target_surface.get_data()
+        a = numpy.frombuffer(buf, numpy.uint8)
+        assert (isinstance(a, numpy.ndarray))
+        a.shape = (self.surface_dims[1], self.surface_dims[0], 4)
+        # Strip Alpha values and copy to our main numpy array
+        # also switch BGR to RGB
+        numpy.copyto(self.displayed_data[:, :, 0], a[:, :, 2])
+        numpy.copyto(self.displayed_data[:, :, 1], a[:, :, 1])
+        numpy.copyto(self.displayed_data[:, :, 2], a[:, :, 0])
+
     def update_data(self):
         """
         Loop that advances the game/animation
@@ -137,20 +151,16 @@ class MatrixController:
 
             # # UPDATE
             if self.game is not None:
+                game = self.game
+                assert isinstance(game, games.Game)
 
                 self.game.step()
-                self.game.draw(self.context)
 
-                # Get data from surface and convert it to numpy array
-                self.surface.flush()
-                buf = self.surface.get_data()
-                a = numpy.frombuffer(buf, numpy.uint8)
-                a.shape = (self.surface_dims[1], self.surface_dims[0], 4)
-                # Strip Alpha values and copy to our main numpy array
-                # also switch BGR to RGB
-                numpy.copyto(self.displayed_data[:, :, 0], a[:, :, 2])
-                numpy.copyto(self.displayed_data[:, :, 1], a[:, :, 1])
-                numpy.copyto(self.displayed_data[:, :, 2], a[:, :, 0])
+                if game.needs_direct_numpy_access:
+                    self.game.draw(self.displayed_data)
+                else:
+                    self.game.draw(self.context)
+                    self.copy_from_context_to_displayed_data()
 
             # #UPDATE END
 
